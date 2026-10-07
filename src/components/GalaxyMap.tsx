@@ -21,16 +21,18 @@ import { visibleSystems } from "../demo/model";
 import { randomFrom } from "../demo/galaxy";
 import { fleetPosition, moving } from "../demo/simulation";
 import { createCells, territoryPaths } from "../demo/territory";
+import { createMapLayout, FIELD_WIDTH, FIELD_HEIGHT } from "../demo/map-layout";
 import type { DemoState, Filter, Point } from "../demo/types";
 
 interface Props {
   state: DemoState;
   selected: number;
+  selectedAsteroid: boolean;
   selectedFleet: number | null;
   filter: Filter;
   onSelect: (id: number, asteroid?: boolean) => void;
   onFleet: (id: number) => void;
-  focus: { id: number; nonce: number; point?: Point };
+  focus: { id: number; nonce: number; point?: Point; asteroid?: boolean };
   preview: number[];
   paused: boolean;
 }
@@ -38,6 +40,7 @@ type Camera = Point & { z: number };
 export default function GalaxyMap({
   state,
   selected,
+  selectedAsteroid,
   selectedFleet,
   filter,
   onSelect,
@@ -64,6 +67,11 @@ export default function GalaxyMap({
   const drag = useRef({ active: false, moved: false, x: 0, y: 0 });
   const [hover, setHover] = useState<number | null>(null),
     [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const [hoverAsteroid, setHoverAsteroid] = useState(false);
+  const mapLayout = useMemo(
+    () => createMapLayout(state.systems, state.seed),
+    [state.seed],
+  );
   const geometry = useMemo(() => createCells(state.systems), [state.seed]); // Geometry is immutable within a seed.
   const owners = state.systems.map((s) => s.owner ?? "n").join(",");
   const territories = useMemo(
@@ -171,15 +179,30 @@ export default function GalaxyMap({
     return () => el.removeEventListener("wheel", wheel);
   });
   useEffect(() => {
-    const s = focus.point ?? state.systems[focus.id];
+    const s =
+      focus.point ??
+      (focus.asteroid
+        ? mapLayout.fields.find((field) => field.system === focus.id)
+        : undefined) ??
+      state.systems[focus.id];
     if (s)
       aim({
         x:
           s.x +
-          (focus.id === 0 && !focus.point && window.innerWidth > 900 ? 200 : 0),
+          (focus.id === 0 &&
+          !focus.point &&
+          !focus.asteroid &&
+          window.innerWidth > 900
+            ? 200
+            : 0),
         y:
           s.y -
-          (focus.id === 0 && !focus.point && window.innerWidth > 900 ? 85 : 0),
+          (focus.id === 0 &&
+          !focus.point &&
+          !focus.asteroid &&
+          window.innerWidth > 900
+            ? 85
+            : 0),
         z: focus.id === 0 ? 0.94 : Math.max(1, cameraRef.current.z),
       });
   }, [focus.nonce, state.seed]);
@@ -220,17 +243,6 @@ export default function GalaxyMap({
         const active = s.id === selected,
           hovered = hover === s.id,
           r = s.star === 4 ? 36 : s.star === 2 ? 23 : 30;
-        const reach = Math.max(
-          145,
-          Math.min(
-            205,
-            Math.min(
-              ...state.systems
-                .filter((other) => other.id !== s.id)
-                .map((other) => Math.hypot(s.x - other.x, s.y - other.y)),
-            ) * 0.48,
-          ),
-        );
         const visible =
           s.x > camera.x - size.width / camera.z / 2 - 240 &&
           s.x < camera.x + size.width / camera.z / 2 + 240 &&
@@ -238,8 +250,6 @@ export default function GalaxyMap({
           s.y < camera.y + size.height / camera.z / 2 + 240;
         if (!visible) return null;
         const labels = true;
-        const rockCount =
-          detail === "far" ? 5 : detail === "medium" ? 8 : 11 + s.belts * 4;
         return (
           <g
             key={s.id}
@@ -261,6 +271,7 @@ export default function GalaxyMap({
               }
             }}
             onPointerEnter={() => {
+              setHoverAsteroid(false);
               if (!drag.current.active) setHover(s.id);
             }}
             onPointerLeave={() => setHover(null)}
@@ -336,22 +347,9 @@ export default function GalaxyMap({
             )}
             {
               <g className="system-interior">
-                {s.planets.map((planet, i) => {
-                  const baseAngle = i * 2.399 + s.id * 1.73 + 0.4;
-                  // Leave a clear wedge below the star for its nameplate.
-                  const a =
-                      baseAngle +
-                      (Math.sin(baseAngle) > 0.45 &&
-                      Math.abs(Math.cos(baseAngle)) < 0.45
-                        ? 0.7
-                        : 0),
-                    orbit = reach * (0.62 + i * 0.12),
-                    diameter = Math.max(
-                      planet === 5 ? 44 : 30 + ((s.id + i) % 3) * 6,
-                      9 / camera.z,
-                    ),
-                    px = Math.cos(a) * orbit,
-                    py = Math.sin(a) * orbit * 0.85;
+                {mapLayout.planets[s.id].map((planet, i) => {
+                  const { orbit, x: px, y: py } = planet;
+                  const diameter = Math.max(planet.diameter, 9 / camera.z);
                   return (
                     <g key={i} className="orbital-planet">
                       <ellipse
@@ -363,7 +361,7 @@ export default function GalaxyMap({
                         strokeWidth=".7"
                       />
                       <image
-                        href={asset(planets[planet])}
+                        href={asset(planets[planet.kind])}
                         x={px - diameter / 2}
                         y={py - diameter / 2}
                         width={diameter}
@@ -373,75 +371,6 @@ export default function GalaxyMap({
                     </g>
                   );
                 })}
-                {s.asteroid && (
-                  <g
-                    role="button"
-                    tabIndex={0}
-                    className="asteroid-field"
-                    aria-label={s.name + " asteroid field"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!drag.current.moved) onSelect(s.id, true);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onSelect(s.id, true);
-                      }
-                    }}
-                  >
-                    <polyline
-                      points={Array.from(
-                        { length: 11 + s.belts * 4 },
-                        (_, i) => {
-                          const angle = -1.35 + i * 0.075 + (s.id % 4) * 1.7;
-                          return `${Math.cos(angle) * reach * 0.92},${Math.sin(angle) * reach * 0.92 * 0.86}`;
-                        },
-                      ).join(" ")}
-                      fill="none"
-                      stroke="transparent"
-                      strokeWidth="32"
-                      pointerEvents="stroke"
-                    />
-                    {Array.from({ length: rockCount }, (_, i) => {
-                      const angle =
-                        -1.35 +
-                        (i / (rockCount - 1)) * (10 + s.belts * 4) * 0.075 +
-                        (s.id % 4) * 1.7;
-                      const radius = reach * (0.92 + Math.sin(i * 4.7) * 0.14);
-                      const x = Math.cos(angle) * radius,
-                        y = Math.sin(angle) * radius * 0.86;
-                      const diameter = Math.max(10 + (i % 4) * 5, 5 / camera.z);
-                      return (
-                        <image
-                          key={i}
-                          href={asset(
-                            i % 3 === 0
-                              ? "asteroid_large_01.webp"
-                              : i % 3 === 1
-                                ? "asteroid_medium_01.png"
-                                : "asteroid_small_01.png",
-                          )}
-                          x={x - diameter / 2}
-                          y={y - diameter / 2}
-                          width={diameter}
-                          height={diameter}
-                          transform={`rotate(${i * 47} ${x} ${y})`}
-                        />
-                      );
-                    })}
-                    <text
-                      x={Math.cos(-0.85 + (s.id % 4) * 1.7) * reach}
-                      y={Math.sin(-0.85 + (s.id % 4) * 1.7) * reach * 0.86 - 24}
-                      textAnchor="middle"
-                      className="asteroid-label"
-                      opacity={detail === "far" ? 0 : 1}
-                    >
-                      ALLOY / FUEL
-                    </text>
-                  </g>
-                )}
               </g>
             }
             {s.strategic && (
@@ -503,6 +432,7 @@ export default function GalaxyMap({
       size,
       detail,
       onSelect,
+      mapLayout,
     ],
   );
 
@@ -783,6 +713,115 @@ export default function GalaxyMap({
             />
           )}
           {systemNodes}
+          <g className="asteroid-fields">
+            {mapLayout.fields.map((field) => {
+              const s = state.systems[field.system];
+              const active = selectedAsteroid && selected === s.id;
+              const hovered = hoverAsteroid && hover === s.id;
+              if (
+                Math.abs(field.x - camera.x) >
+                  size.width / camera.z / 2 + 140 ||
+                Math.abs(field.y - camera.y) > size.height / camera.z / 2 + 140
+              )
+                return null;
+              const width = Math.max(FIELD_WIDTH, 32 / camera.z);
+              const height = (width * FIELD_HEIGHT) / FIELD_WIDTH;
+              const angle = (field.angle * Math.PI) / 180;
+              const halfWidth =
+                (Math.abs(Math.cos(angle)) * width +
+                  Math.abs(Math.sin(angle)) * height) /
+                2;
+              const halfHeight =
+                (Math.abs(Math.sin(angle)) * width +
+                  Math.abs(Math.cos(angle)) * height) /
+                2;
+              return (
+                <g key={s.id} opacity={emphasized(s.id) || active ? 1 : 0.2}>
+                  {(active || hovered) && (
+                    <line
+                      x1={s.x}
+                      y1={s.y}
+                      x2={field.x}
+                      y2={field.y}
+                      stroke="#d4bd86"
+                      strokeOpacity=".4"
+                      strokeDasharray="4 8"
+                      pointerEvents="none"
+                    />
+                  )}
+                  <g
+                    transform={`translate(${field.x} ${field.y})`}
+                    className={`asteroid-field ${active ? "selected" : ""}`}
+                    data-asteroid-system={s.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${s.name} asteroid field`}
+                    aria-pressed={active}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!drag.current.moved) onSelect(s.id, true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSelect(s.id, true);
+                      }
+                    }}
+                    onPointerEnter={() => {
+                      if (!drag.current.active) {
+                        setHover(s.id);
+                        setHoverAsteroid(true);
+                      }
+                    }}
+                    onPointerLeave={() => setHover(null)}
+                  >
+                    <rect
+                      className="field-hit-area"
+                      x={-halfWidth - 8}
+                      y={-halfHeight - 8}
+                      width={halfWidth * 2 + 16}
+                      height={
+                        halfHeight + Math.max(halfHeight, height / 2 + 26) + 16
+                      }
+                      rx="12"
+                      fill="transparent"
+                      pointerEvents="all"
+                    />
+                    <image
+                      href={asset("original/asteroid-belt.webp")}
+                      x={-width / 2}
+                      y={-height / 2}
+                      width={width}
+                      height={height}
+                      transform={`rotate(${field.angle})`}
+                      pointerEvents="none"
+                    />
+                    {(detail !== "far" || active || hovered) && (
+                      <>
+                        <text
+                          y={height / 2 + 11}
+                          textAnchor="middle"
+                          className="field-name"
+                          pointerEvents="none"
+                        >
+                          {s.name} Belt
+                        </text>
+                        <text
+                          y={height / 2 + 23}
+                          textAnchor="middle"
+                          className="asteroid-label"
+                          pointerEvents="none"
+                        >
+                          MINEABLE · ALLOY / FUEL
+                        </text>
+                      </>
+                    )}
+                  </g>
+                </g>
+              );
+            })}
+          </g>
           {state.battles.map((b) => (
             <g
               key={b.id}
@@ -1062,15 +1101,18 @@ export default function GalaxyMap({
         >
           <Orbit size={16} />
           <div>
-            <strong>{state.systems[hover].name}</strong>
+            <strong>
+              {state.systems[hover].name}
+              {hoverAsteroid ? " Belt" : ""}
+            </strong>
             <span>
               {state.systems[hover].owner === null
                 ? "Neutral frontier"
                 : state.commanders[state.systems[hover].owner!].name}
             </span>
             <small>
-              {state.systems[hover].asteroid
-                ? "Asteroid field · Alloy deposits"
+              {hoverAsteroid
+                ? "Click the field to send a mining fleet"
                 : "Click to inspect system"}
             </small>
           </div>

@@ -477,6 +477,33 @@
 .asteroid-field {
   cursor: pointer;
 }
+.field-hit-area {
+  stroke: transparent;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.asteroid-field:hover .field-hit-area,
+.asteroid-field:focus .field-hit-area,
+.asteroid-field.selected .field-hit-area {
+  stroke: #dec38c;
+  fill: #b69b5810;
+}
+.field-name {
+  fill: #c8c5b8;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  paint-order: stroke;
+  stroke: #07101b;
+  stroke-width: 3px;
+}
+.asteroid-field .asteroid-label {
+  font-size: 6px;
+  fill: #9eaeb7;
+}
+.asteroid-hero > img {
+  width: 190px;
+  height: 85px;
+}
 .asteroid-field:hover image,
 .asteroid-field:focus image {
   filter: brightness(1.4);

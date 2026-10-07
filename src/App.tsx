@@ -219,7 +219,12 @@ export default function App() {
       state.fleets[0].id,
     );
   const [filter, setFilter] = useState<Filter>("All"),
-    [focus, setFocus] = useState<{ id: number; nonce: number; point?: Point }>({
+    [focus, setFocus] = useState<{
+      id: number;
+      nonce: number;
+      point?: Point;
+      asteroid?: boolean;
+    }>({
       id: 0,
       nonce: 0,
     });
@@ -303,7 +308,7 @@ export default function App() {
   }, []);
   const focusOn = (id: number, belt = false) => {
     inspect(id, belt);
-    setFocus((f) => ({ id, nonce: f.nonce + 1 }));
+    setFocus((f) => ({ id, nonce: f.nonce + 1, asteroid: belt }));
   };
   const selectFleet = (id: number) => {
     const fleet = state.fleets.find((f) => f.id === id)!;
@@ -562,7 +567,7 @@ export default function App() {
               key={`${selected}-${asteroid}`}
               src={asset(
                 asteroid
-                  ? "asteroid_large_01.webp"
+                  ? "original/asteroid-belt.webp"
                   : `original/sun-type-${s.star}.webp`,
               )}
               className={asteroid ? "" : `star-art star-type-${s.star}`}
@@ -687,9 +692,9 @@ export default function App() {
             {s.asteroid && !asteroid && (
               <button
                 className="asteroid-opportunity"
-                onClick={() => setAsteroid(true)}
+                onClick={() => focusOn(selected, true)}
               >
-                <img src={asset("asteroid_medium_01.png")} alt="" />
+                <img src={asset("original/asteroid-belt.webp")} alt="" />
                 <span>
                   <strong>{s.name} Belt</strong>
                   <small>Rich Alloy deposits</small>
@@ -876,6 +881,7 @@ export default function App() {
           <GalaxyMap
             state={state}
             selected={selected}
+            selectedAsteroid={asteroid}
             selectedFleet={selectedFleet}
             filter={filter}
             onSelect={inspect}
@@ -1255,7 +1261,7 @@ export default function App() {
             <img
               src={asset(
                 order.mission === "mine"
-                  ? "asteroid_large_01.webp"
+                  ? "original/asteroid-belt.webp"
                   : planets[state.systems[order.target].planet],
               )}
               alt=""
