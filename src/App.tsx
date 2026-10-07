@@ -242,6 +242,13 @@ export default function App() {
     [allBots, setAllBots] = useState(false),
     [quantity, setQuantity] = useState(1);
   const [reportId, setReportId] = useState<number | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(
+    () => window.innerWidth > 900,
+  );
+  const [operationsOpen, setOperationsOpen] = useState(
+    () => window.innerWidth > 1100,
+  );
+  const [activityOpen, setActivityOpen] = useState(false);
   const stateRef = useRef(state);
   stateRef.current = state;
   const fleetSection = useRef<HTMLDivElement>(null),
@@ -292,6 +299,7 @@ export default function App() {
   const inspect = useCallback((id: number, belt = false) => {
     setSelected(id);
     setAsteroid(belt);
+    setInspectorOpen(true);
   }, []);
   const focusOn = (id: number, belt = false) => {
     inspect(id, belt);
@@ -368,7 +376,9 @@ export default function App() {
   const activeReport =
     reportId === null ? null : state.reports.find((r) => r.id === reportId);
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell ${inspectorOpen ? "inspector-open" : ""} ${operationsOpen ? "operations-open" : ""}`}
+    >
       <header className="topbar">
         <a
           className="brand"
@@ -486,15 +496,46 @@ export default function App() {
         </div>
       </div>
       <main className="dashboard">
-        <aside className="system-inspector panel">
+        <div className="panel-switches" aria-label="Map panels">
+          <button
+            aria-expanded={inspectorOpen}
+            aria-controls="system-panel"
+            onClick={() => setInspectorOpen(!inspectorOpen)}
+          >
+            <Crosshair size={14} /> System
+          </button>
+          <button
+            aria-expanded={operationsOpen}
+            aria-controls="operations-panel"
+            onClick={() => setOperationsOpen(!operationsOpen)}
+          >
+            <Navigation size={14} /> Command
+          </button>
+          <button
+            aria-expanded={activityOpen}
+            aria-controls="activity-panel"
+            onClick={() => setActivityOpen(!activityOpen)}
+          >
+            <Activity size={14} /> Activity
+          </button>
+        </div>
+        <aside
+          id="system-panel"
+          className="system-inspector panel"
+          hidden={!inspectorOpen}
+        >
           <div className="panel-heading">
             <span>
               <Crosshair size={14} />
               SYSTEM INTELLIGENCE
             </span>
-            <span className="tiny-number">
-              {String(selected + 1).padStart(3, "0")}
-            </span>
+            <button
+              className="icon-button"
+              aria-label="Hide system panel"
+              onClick={() => setInspectorOpen(false)}
+            >
+              <X size={14} />
+            </button>
           </div>
           <div className="system-title">
             <div
@@ -522,8 +563,9 @@ export default function App() {
               src={asset(
                 asteroid
                   ? "asteroid_large_01.webp"
-                  : `original/star-${s.star}.svg`,
+                  : `original/sun-type-${s.star}.webp`,
               )}
+              className={asteroid ? "" : `star-art star-type-${s.star}`}
               alt={
                 asteroid ? `${s.name} asteroid field` : `${s.name} star system`
               }
@@ -842,54 +884,66 @@ export default function App() {
             preview={preview}
             paused={paused}
           />
-          <BattleTray state={state} onFocus={focusOn} />
-          {currentFleet?.owner === 0 && (
-            <FleetOrders state={state} fleet={currentFleet} mutate={mutate} />
-          )}
-          {currentFleet?.owner === 0 && (
-            <div className="selected-fleet-bar">
-              <div>
-                <Navigation size={16} />
-                <span>
-                  <strong>{currentFleet.name}</strong>
-                  <small>
-                    {moving(currentFleet)
-                      ? `En route to ${state.systems[currentFleet.route.at(-1)!].name}`
-                      : "Select a destination on the map"}
-                  </small>
+          <div className="fleet-dock">
+            <BattleTray state={state} onFocus={focusOn} />
+            {currentFleet?.owner === 0 && (
+              <FleetOrders state={state} fleet={currentFleet} mutate={mutate} />
+            )}
+            {currentFleet?.owner === 0 && (
+              <div className="selected-fleet-bar">
+                <div>
+                  <Navigation size={16} />
+                  <span>
+                    <strong>{currentFleet.name}</strong>
+                    <small>
+                      {moving(currentFleet)
+                        ? `En route to ${state.systems[currentFleet.route.at(-1)!].name}`
+                        : "Select a destination on the map"}
+                    </small>
+                  </span>
+                </div>
+                <span className="fleet-power">
+                  {format(currentFleet.power)} <small>PWR</small>
                 </span>
+                <button
+                  disabled={
+                    moving(currentFleet) ||
+                    currentFleet.status === "Battle" ||
+                    currentFleet.retreatAt !== null
+                  }
+                  onClick={() =>
+                    openOrder(
+                      asteroid ? "mine" : s.owner !== 0 ? "attack" : "move",
+                    )
+                  }
+                >
+                  {moving(currentFleet)
+                    ? time(currentFleet.duration - currentFleet.elapsed)
+                    : "Set course"}
+                  <ArrowRight size={13} />
+                </button>
               </div>
-              <span className="fleet-power">
-                {format(currentFleet.power)} <small>PWR</small>
-              </span>
-              <button
-                disabled={
-                  moving(currentFleet) ||
-                  currentFleet.status === "Battle" ||
-                  currentFleet.retreatAt !== null
-                }
-                onClick={() =>
-                  openOrder(
-                    asteroid ? "mine" : s.owner !== 0 ? "attack" : "move",
-                  )
-                }
-              >
-                {moving(currentFleet)
-                  ? time(currentFleet.duration - currentFleet.elapsed)
-                  : "Set course"}
-                <ArrowRight size={13} />
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </section>
-        <aside className="operations-panel panel">
+        <aside
+          id="operations-panel"
+          className="operations-panel panel"
+          hidden={!operationsOpen}
+        >
           <div ref={fleetSection} className="fleets-section">
             <div className="panel-heading">
               <span>
                 <Navigation size={14} />
                 YOUR FLEETS
               </span>
-              <span className="count-badge">{playerFleets.length}</span>
+              <button
+                className="icon-button"
+                aria-label="Hide command panel"
+                onClick={() => setOperationsOpen(false)}
+              >
+                <X size={14} />
+              </button>
             </div>
             <div className="fleet-list">
               {playerFleets.map((f) => (
@@ -1034,7 +1088,7 @@ export default function App() {
           <CommandFeed state={state} mutate={mutate} onFocus={focusOn} />
         </aside>
       </main>
-      <section className="event-log">
+      <section id="activity-panel" className="event-log" hidden={!activityOpen}>
         <div className="event-heading">
           <span>
             <Activity size={14} />
@@ -1042,6 +1096,12 @@ export default function App() {
             <span className="live-dot" />
           </span>
           <div>
+            <button
+              aria-label="Hide activity panel"
+              onClick={() => setActivityOpen(false)}
+            >
+              <X size={14} />
+            </button>
             <button
               className={eventFilter === "all" ? "active" : ""}
               onClick={() => setEventFilter("all")}

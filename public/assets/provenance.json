@@ -227,6 +227,13 @@
       "sourcePath": "src/assets/artwork/war2_pirate_black_ledger.webp",
       "purpose": "Quick Conquest neutral pirate fleet / inspector art",
       "sha256": "2e3060b8e458a819543682b52ced5e2232b54b9824c1eec72cb051543f0e013d"
+    },
+    {
+      "path": "public/assets/war2_nebula_battlefield.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_nebula_battlefield.webp",
+      "purpose": "Galaxy backdrop, unchanged local copy",
+      "sha256": "bc4b5e406bd99c0d94e4a9c86b614d182f6fbb5913a0112dc943fa2ae2731a04"
     }
   ],
   "originalAssets": [
@@ -343,6 +350,77 @@
       "origin": "ORIGINAL SPACE WARS ASSET",
       "generator": "scripts/generate-assets.mjs",
       "sha256": "e2c533d78f51a26679d63a05485b92abda9bfda532cb3f0968fa80b0e2e418e3"
+    },
+    {
+      "path": "public/assets/original/sun-photosphere.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "Built-in imagegen, transparent raster; resized to 512px WebP with alpha preserved",
+      "prompt": "Use case: stylized-concept. Asset type: single transparent star sprite for a premium space strategy game, square 1024x1024. Primary request: one realistic yellow-orange main sequence sun viewed as a complete round sphere, centered, diameter about 58% of canvas with generous empty transparent margin for a delicate corona. NASA solar photography meets finely detailed AAA game planet art. Rich turbulent granular photosphere with irregular convection cells, luminous pale golden regions, deep amber red magnetic filaments, subtle sunspots, several small curved plasma prominences tracing the limb. Uniformly self-luminous, no cast shadow, no planet-like shaded hemisphere. Fine wispy corona fades gently into fully transparent background, contained within 90% of canvas. Retain textured surface; do not blow out center to blank white. Crisp physically rich detail that still reads at 100 pixels. No starfield, no other objects, no text, no frame, no diagram, no hard outer border, no cartoon vector appearance. Actual transparent alpha background.",
+      "sha256": "cd6b8bb7ee2520725d7cc592d210480f0c2ad83da7268d5bb11edcd469102149"
+    },
+    {
+      "path": "public/assets/original/sun-type-0.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "scripts/prepare-star-textures.mjs",
+      "source": "public/assets/original/sun-photosphere.webp",
+      "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
+      "sha256": "d82c684d114d444be9c06ed705d3b49bfcfc06da4928a9bdf7bbf011bb17e341"
+    },
+    {
+      "path": "public/assets/original/sun-type-1.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "scripts/prepare-star-textures.mjs",
+      "source": "public/assets/original/sun-photosphere.webp",
+      "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
+      "sha256": "28c038230c08f2ec7fa5ca7d895d20cf4cbf9be5c730531b99eedb14f07c4160"
+    },
+    {
+      "path": "public/assets/original/sun-type-2.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "scripts/prepare-star-textures.mjs",
+      "source": "public/assets/original/sun-photosphere.webp",
+      "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
+      "sha256": "38af9e4ea00cfa1c2a727bac8a3cc11dbe59079bbe1d4661a6ae8385d8a935ce"
+    },
+    {
+      "path": "public/assets/original/sun-type-3.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "scripts/prepare-star-textures.mjs",
+      "source": "public/assets/original/sun-photosphere.webp",
+      "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
+      "sha256": "6225a7abbbea3b1b404ff78b16c9c4e634140210d1cca728d3f0420b3959eed8"
+    },
+    {
+      "path": "public/assets/original/sun-type-4.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "scripts/prepare-star-textures.mjs",
+      "source": "public/assets/original/sun-photosphere.webp",
+      "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
+      "sha256": "38af9e4ea00cfa1c2a727bac8a3cc11dbe59079bbe1d4661a6ae8385d8a935ce"
+    },
+    {
+      "path": "public/assets/original/sun-type-5.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "scripts/prepare-star-textures.mjs",
+      "source": "public/assets/original/sun-photosphere.webp",
+      "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
+      "sha256": "5bed39126760ae01440dd0a675658f966c9ac79a9128218d550cbba34ddee1f6"
+    },
+    {
+      "path": "public/assets/original/sun-type-6.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "scripts/prepare-star-textures.mjs",
+      "source": "public/assets/original/sun-photosphere.webp",
+      "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
+      "sha256": "afd6b51e46da33f9121141954e7f00556e83e49ce345b0e121c55cc467777d42"
+    },
+    {
+      "path": "public/assets/original/sun-type-7.webp",
+      "origin": "ORIGINAL SPACE WARS ASSET",
+      "generator": "scripts/prepare-star-textures.mjs",
+      "source": "public/assets/original/sun-photosphere.webp",
+      "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
+      "sha256": "9607768edfc49cacae2d9e7b342af70537c1f1f6461ea778479fe08fc5be48c4"
     }
   ]
 }

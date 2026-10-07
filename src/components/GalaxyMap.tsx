@@ -51,7 +51,13 @@ export default function GalaxyMap({
   const worldLayer = useRef<SVGGElement>(null),
     lastCameraPaint = useRef(0);
   const [size, setSize] = useState({ width: 1000, height: 740 });
-  const [camera, setCamera] = useState<Camera>({ x: 1420, y: 1150, z: 0.82 });
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
+  const [camera, setCamera] = useState<Camera>(() => ({
+    x: state.systems[0].x + (window.innerWidth > 900 ? 200 : 0),
+    y: state.systems[0].y - (window.innerWidth > 900 ? 85 : 0),
+    z: 0.94,
+  }));
   const cameraRef = useRef(camera),
     target = useRef(camera),
     frame = useRef(0);
@@ -66,11 +72,11 @@ export default function GalaxyMap({
   );
   const stars = useMemo(() => {
     const r = randomFrom("starfield:" + state.seed);
-    return Array.from({ length: 800 }, () => ({
+    return Array.from({ length: 1000 }, () => ({
       x: r() * WORLD.width,
       y: r() * WORLD.height,
       r: 0.4 + r() * 1.2,
-      opacity: 0.12 + r() * 0.38,
+      opacity: 0.2 + r() * 0.55,
     }));
   }, [state.seed]);
   const starfield = useMemo(
@@ -92,7 +98,7 @@ export default function GalaxyMap({
   );
   const detail = camera.z > 0.72 ? "close" : camera.z > 0.43 ? "medium" : "far";
   const transformFor = (c: Camera) =>
-    `translate(${size.width / 2} ${size.height / 2}) scale(${c.z}) translate(${-c.x} ${-c.y})`;
+    `translate(${sizeRef.current.width / 2} ${sizeRef.current.height / 2}) scale(${c.z}) translate(${-c.x} ${-c.y})`;
   const paintCamera = (next: Camera, settled = false) => {
     cameraRef.current = next;
     // Move the SVG immediately; refresh labels/culling less often than the camera.
@@ -168,9 +174,13 @@ export default function GalaxyMap({
     const s = focus.point ?? state.systems[focus.id];
     if (s)
       aim({
-        x: s.x,
-        y: s.y,
-        z: focus.id === 0 ? 0.65 : Math.max(0.82, cameraRef.current.z),
+        x:
+          s.x +
+          (focus.id === 0 && !focus.point && window.innerWidth > 900 ? 200 : 0),
+        y:
+          s.y -
+          (focus.id === 0 && !focus.point && window.innerWidth > 900 ? 85 : 0),
+        z: focus.id === 0 ? 0.94 : Math.max(1, cameraRef.current.z),
       });
   }, [focus.nonce, state.seed]);
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
@@ -209,14 +219,27 @@ export default function GalaxyMap({
       state.systems.map((s) => {
         const active = s.id === selected,
           hovered = hover === s.id,
-          r = s.id === 0 ? 26 : s.capital ? 20 : 14;
+          r = s.star === 4 ? 36 : s.star === 2 ? 23 : 30;
+        const reach = Math.max(
+          145,
+          Math.min(
+            205,
+            Math.min(
+              ...state.systems
+                .filter((other) => other.id !== s.id)
+                .map((other) => Math.hypot(s.x - other.x, s.y - other.y)),
+            ) * 0.48,
+          ),
+        );
         const visible =
-          s.x > camera.x - size.width / camera.z / 2 - 100 &&
-          s.x < camera.x + size.width / camera.z / 2 + 100 &&
-          s.y > camera.y - size.height / camera.z / 2 - 100 &&
-          s.y < camera.y + size.height / camera.z / 2 + 100;
+          s.x > camera.x - size.width / camera.z / 2 - 240 &&
+          s.x < camera.x + size.width / camera.z / 2 + 240 &&
+          s.y > camera.y - size.height / camera.z / 2 - 240 &&
+          s.y < camera.y + size.height / camera.z / 2 + 240;
         if (!visible) return null;
         const labels = true;
+        const rockCount =
+          detail === "far" ? 5 : detail === "medium" ? 8 : 11 + s.belts * 4;
         return (
           <g
             key={s.id}
@@ -280,20 +303,30 @@ export default function GalaxyMap({
             )}
             <circle
               r={r + 3}
-              fill="#0b1119"
+              fill="none"
               stroke={color(s.owner)}
               strokeWidth={s.capital ? 1.4 : 1}
               strokeOpacity=".7"
             />
 
             <image
-              href={asset(`original/star-${s.star}.svg`)}
-              x={-r * 1.7}
-              y={-r * 1.7}
-              width={r * 3.4}
-              height={r * 3.4}
-              className="planet-map"
+              href={asset(`original/sun-type-${s.star}.webp`)}
+              x={-r * 1.85}
+              y={-r * 1.85}
+              width={r * 3.7}
+              height={r * 3.7}
+              className={`star-art star-type-${s.star}`}
             />
+            {s.star === 6 && (
+              <image
+                href={asset("original/sun-type-3.webp")}
+                x={17}
+                y={-46}
+                width={48}
+                height={48}
+                className="star-art star-type-3"
+              />
+            )}
 
             {s.capital && (
               <path
@@ -301,27 +334,41 @@ export default function GalaxyMap({
                 fill={s.owner === 0 ? "#e0c08c" : color(s.owner)}
               />
             )}
-            {detail === "close" && (
+            {
               <g className="system-interior">
                 {s.planets.map((planet, i) => {
-                  const a = i * 2.399 + s.id,
-                    orbit = 46 + i * 13;
+                  const baseAngle = i * 2.399 + s.id * 1.73 + 0.4;
+                  // Leave a clear wedge below the star for its nameplate.
+                  const a =
+                      baseAngle +
+                      (Math.sin(baseAngle) > 0.45 &&
+                      Math.abs(Math.cos(baseAngle)) < 0.45
+                        ? 0.7
+                        : 0),
+                    orbit = reach * (0.62 + i * 0.12),
+                    diameter = Math.max(
+                      planet === 5 ? 44 : 30 + ((s.id + i) % 3) * 6,
+                      9 / camera.z,
+                    ),
+                    px = Math.cos(a) * orbit,
+                    py = Math.sin(a) * orbit * 0.85;
                   return (
-                    <g key={i}>
+                    <g key={i} className="orbital-planet">
                       <ellipse
                         rx={orbit}
-                        ry={orbit * 0.72}
+                        ry={orbit * 0.85}
                         fill="none"
                         stroke={color(s.owner)}
-                        strokeOpacity=".12"
+                        strokeOpacity={active || hovered ? ".18" : ".055"}
                         strokeWidth=".7"
                       />
                       <image
                         href={asset(planets[planet])}
-                        x={Math.cos(a) * orbit - 8}
-                        y={Math.sin(a) * orbit * 0.72 - 8}
-                        width={16 + i * 2}
-                        height={16 + i * 2}
+                        x={px - diameter / 2}
+                        y={py - diameter / 2}
+                        width={diameter}
+                        height={diameter}
+                        className="planet-texture"
                       />
                     </g>
                   );
@@ -330,32 +377,73 @@ export default function GalaxyMap({
                   <g
                     role="button"
                     tabIndex={0}
+                    className="asteroid-field"
                     aria-label={s.name + " asteroid field"}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onSelect(s.id, true);
+                      if (!drag.current.moved) onSelect(s.id, true);
                     }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
                         e.stopPropagation();
                         onSelect(s.id, true);
                       }
                     }}
                   >
-                    <image
-                      href={asset(`original/belt-${s.id % 3}.svg`)}
-                      x="-93"
-                      y="-76"
-                      width="186"
-                      height="152"
+                    <polyline
+                      points={Array.from(
+                        { length: 11 + s.belts * 4 },
+                        (_, i) => {
+                          const angle = -1.35 + i * 0.075 + (s.id % 4) * 1.7;
+                          return `${Math.cos(angle) * reach * 0.92},${Math.sin(angle) * reach * 0.92 * 0.86}`;
+                        },
+                      ).join(" ")}
+                      fill="none"
+                      stroke="transparent"
+                      strokeWidth="32"
+                      pointerEvents="stroke"
                     />
-                    <text x="65" y="-49" className="asteroid-label">
+                    {Array.from({ length: rockCount }, (_, i) => {
+                      const angle =
+                        -1.35 +
+                        (i / (rockCount - 1)) * (10 + s.belts * 4) * 0.075 +
+                        (s.id % 4) * 1.7;
+                      const radius = reach * (0.92 + Math.sin(i * 4.7) * 0.14);
+                      const x = Math.cos(angle) * radius,
+                        y = Math.sin(angle) * radius * 0.86;
+                      const diameter = Math.max(10 + (i % 4) * 5, 5 / camera.z);
+                      return (
+                        <image
+                          key={i}
+                          href={asset(
+                            i % 3 === 0
+                              ? "asteroid_large_01.webp"
+                              : i % 3 === 1
+                                ? "asteroid_medium_01.png"
+                                : "asteroid_small_01.png",
+                          )}
+                          x={x - diameter / 2}
+                          y={y - diameter / 2}
+                          width={diameter}
+                          height={diameter}
+                          transform={`rotate(${i * 47} ${x} ${y})`}
+                        />
+                      );
+                    })}
+                    <text
+                      x={Math.cos(-0.85 + (s.id % 4) * 1.7) * reach}
+                      y={Math.sin(-0.85 + (s.id % 4) * 1.7) * reach * 0.86 - 24}
+                      textAnchor="middle"
+                      className="asteroid-label"
+                      opacity={detail === "far" ? 0 : 1}
+                    >
                       ALLOY / FUEL
                     </text>
                   </g>
                 )}
               </g>
-            )}
+            }
             {s.strategic && (
               <image
                 href={asset(`original/objective-${s.strategic}.svg`)}
@@ -368,7 +456,7 @@ export default function GalaxyMap({
             {labels && (
               <>
                 <text
-                  y={detail === "close" ? 100 : r + 29}
+                  y={r + 35}
                   textAnchor="middle"
                   className={`system-label ${s.owner === 0 ? "owned-label" : ""}`}
                   style={{
@@ -384,7 +472,7 @@ export default function GalaxyMap({
                 </text>
                 {(active || s.id === 0 || detail === "close") && (
                   <text
-                    y={detail === "close" ? 114 : r + 44}
+                    y={r + 51}
                     textAnchor="middle"
                     className="system-subtitle"
                     fill={color(s.owner)}
@@ -404,8 +492,8 @@ export default function GalaxyMap({
         );
       }),
     [
-      state.systems,
-      state.commanders,
+      state.seed,
+      owners,
       selected,
       hover,
       filter,
@@ -612,7 +700,7 @@ export default function GalaxyMap({
                   d={t.path}
                   fill={color(t.owner)}
                   fillOpacity={
-                    t.owner === 0 ? 0.11 : detail === "far" ? 0.1 : 0.045
+                    t.owner === 0 ? 0.065 : detail === "far" ? 0.08 : 0.035
                   }
                   stroke={color(t.owner)}
                   strokeWidth={t.owner === 0 ? 1.8 : 1.1}

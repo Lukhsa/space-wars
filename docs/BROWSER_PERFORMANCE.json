@@ -1,20 +1,20 @@
 {
   "environment": "Windows, Playwright headless Chromium, production Vite preview, 1440x1000, 6-second requestAnimationFrame samples; not a sustained hardware certification",
   "opening": {
-    "frames": 362,
-    "elapsedMs": 6017,
-    "fps": 60.2,
-    "medianMs": 16.7,
-    "p95Ms": 16.8
-  },
-  "escalation": {
     "frames": 361,
-    "elapsedMs": 6002,
+    "elapsedMs": 6003,
     "fps": 60.1,
     "medianMs": 16.7,
     "p95Ms": 16.8
   },
-  "assetRequests": 42,
-  "decodedAssetBytes": 4973680,
+  "escalation": {
+    "frames": 340,
+    "elapsedMs": 6008,
+    "fps": 56.6,
+    "medianMs": 16.7,
+    "p95Ms": 16.8
+  },
+  "assetRequests": 34,
+  "decodedAssetBytes": 6486198,
   "runtimeErrors": []
 }
