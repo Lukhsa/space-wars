@@ -1,77 +1,64 @@
-# SPACE WARS
+# Space Wars — Quick Conquest
 
-A locally playable strategic galaxy prototype in the Space Explorer universe. Phase 1 focuses on the map, territory, fleet movement and the feel of commanding a growing empire.
+A complete **local-only, eight-commander free-for-all**: one human against seven seeded utility bots. Expand across star systems, build fleets, mine, fight pirates and rivals, contest major objectives, and finish with a Dominion leaderboard. Normal matches last 40 simulated minutes; protected homes let defeated fleets rebuild.
 
-[Dashboard screenshot](docs/screenshots/dashboard.png) · [Conquest screenshot](docs/screenshots/conquest.png) · [Validation and known limitations](docs/PHASE1_VALIDATION.md)
+The Phase 1 dashboard, map camera, territory geometry and approved Space Explorer artwork are retained. Phase 2 replaces mock gameplay with shared, deterministic local rules. No backend, accounts, Supabase, network chat or sibling repository is needed.
 
-## Run locally
+## Run
 
-Use Node.js **22.12+** (tested with Node 24) and npm. From this repository:
-
-```sh
-npm install
-npm run dev
-```
-
-Open **http://127.0.0.1:5173/**. Cmdr. Vale's empire loads immediately; there is no login or setup screen. No backend, environment variables, account, Supabase project or sibling repository is required. Refreshing the page resets the session.
-
-## Your first expedition
-
-1. Drag the galaxy to pan, scroll to zoom around the pointer, or click the minimap. The map also supports arrow keys, `+`, `-` and `Home` when focused. Use the overview button to see the whole galaxy.
-2. Select **1st Expeditionary**, then **Nexus**. Click **Claim system**, review the connected route and launch. Travel takes 15–60 simulated seconds. Victory changes ownership and redraws your border.
-3. Inspect **Pallas Belt**, choose **Send mining fleet**, and assign a fleet. After travel, extraction takes 18 seconds and awards Alloy.
-4. Open **Build a ship**. Frigate / Destroyer / Cruiser / Dreadnought take 10 / 20 / 40 / 60 seconds. Two construction berths are available. Ships enter reserve; **Fleet command → Reinforce** assigns reserve ships to a fleet at Nova Prime.
-5. Use **Scout** on a rival or neutral system for a local reconnaissance result. Click world events to focus their locations and your battle events to open reports.
-
-The fleet course bar also supports movement, assault and mining according to the selected target. Orders cannot be redirected in flight. Search finds systems throughout the galaxy; filters emphasize owned, neutral, hostile, fleet or asteroid locations. Intelligence introduces the eight civilizations and provides recent battle reports.
-
-## Demo controls
-
-The separate **DEV** control opens the current seed, **Regenerate galaxy**, **Reset demo**, **Pause / Resume** and **×1 / ×2 / ×5** speed controls. Default seed: `ORION-7742`.
-
-The same seed produces the same initial world: **160 systems, 32 commanders, 34 fleets**, including your six controlled systems and three fleets. Rival regions, neutral gaps, art and lanes vary between seeds. The starting neighborhood stays recognizable so comparing seeds is easy. Seeded rival schedules provide reproducible local activity; player actions and timing influence subsequent events.
-
-Pause freezes all simulation time, including production and movement. Time also pauses while the page is hidden. Reset rebuilds the current seed and retains the chosen pause/speed controls. Regenerate uses the entered seed. Nothing persists beyond the page session.
-
-## Deliberately local and temporary
-
-All commanders, resources, orders, reports and events exist in browser memory. Mock combat compares fleet power with system defense plus a bounded seeded variation. It is isolated in `src/demo/simulation.ts`; **Battle Lab V2 top-down combat has not been extracted or integrated**.
-
-Rivals follow lightweight seeded activity schedules, not production bot AI. They travel, mine, occasionally assault one another and change borders; they leave the player's territory alone. There is no multiplayer, authentication, server authority, fog-of-war security, diplomacy, seasonal lifecycle or production persistence. Rival information is illustrative and available locally. Civilization differences are visual only.
-
-Population, system output estimates, defenses, costs, initial fleet power and capture rewards are placeholder balance. Only the global Credits trickle, mining Alloy, order Fuel costs, ship construction and capture rewards affect resources. System output rows are display estimates, not a simulated colony economy. Mining deposits do not deplete. Fleets use abstract power attrition rather than per-ship battle damage. The Destroyer temporarily uses Engine-Burner art alongside Human hulls.
-
-## Verification
+Node **22.12+** and npm are required (validated with Node 24 on Windows).
 
 ```sh
 npm ci
+npm run dev
+```
+
+Open **http://127.0.0.1:5173/**. A match starts immediately. Refresh resets it; active-match saving is intentionally postponed. Time pauses while the page is hidden.
+
+## Your first match
+
+1. Select **1st Expeditionary**, search for **Nexus**, then **Claim system → Launch assault**. Hold the cleared system for 20 seconds to gain its worlds, income and score.
+2. Select **Mining Group Alpha**, open **Nova Prime Belt**, and **Send mining fleet**. A 40-second cycle yields 200 Alloy and 65 Fuel. Mining is one cycle per order.
+3. **Build a ship** supports quantities of 1, 2, 3 or 5. Two berths work through a ten-ship queue. **Fleets** lets you allocate reserve hulls to a new fleet or reinforce a fleet at home.
+4. Scout before fighting. **Caldera** and the other contested middle systems hold pirates and strategic bonuses. Hostile fleets intercept at intermediate systems on a route.
+5. During battle, select your fleet and choose **Aggressive**, **Defensive**, **Focus capitals**, **Focus escorts**, or **Retreat**. Withdrawal takes six exposed seconds, then the survivors travel home. The rest of the galaxy remains usable.
+6. Watch **Standings**, **Global Chat**, the event log and the objective indicators. At 15 minutes the Guardian awakens; at 25 minutes the Leviathan appears; the final five minutes double Core score.
+
+Drag to pan, scroll to zoom, or use the minimap. Arrow keys pan a focused map; `+` / `-` zoom and `Home` returns home. Close zoom reveals planets and asteroid fields around each star. The sidebars scroll on shorter screens.
+
+## Rules and verification
+
+- [Complete rules, exact balance, controls and shortcuts](docs/QUICK_CONQUEST_PROTOTYPE.md)
+- [Validation, gameplay observations and remaining issues](docs/PHASE2_VALIDATION.md)
+- [Bot simulation results](docs/BOT_SIMULATION_RESULTS.json)
+- [Asset provenance](docs/ASSET_PROVENANCE.md)
+- [Opening](docs/screenshots/quick-conquest-opening.png) · [Map combat](docs/screenshots/quick-conquest-battle.png) · [Escalation](docs/screenshots/quick-conquest-escalation.png) · [Results](docs/screenshots/quick-conquest-result.png)
+
+```sh
 npm run typecheck
 npm run lint
 npm test
 npm run build
-```
-
-Optional Chromium interaction checks:
-
-```sh
 npx playwright install chromium
 npm run test:e2e
+npm run simulate -- --save
+npm run simulate -- MY-SEED --duration=600
 ```
 
-Playwright starts the dev server if needed. Tests cover deterministic generation, graph connectivity, spawn validity, movement, capture/territory mutation, mining, construction, reserve assignment, invalid orders and simulation invariants. Browser checks exercise the camera, local action flows, seed controls and responsive layout.
+`simulate` runs eight bots without rendering and prints full leaderboard, combat, economy, recovery and objective statistics. `--save` writes the three default seeds to `docs/BOT_SIMULATION_RESULTS.json`. In the browser, **DEV** provides restart/seed, 10/20/30/40/60-minute presets, pause, ×1/×2/×5/×10, resources, reveal, objectives, phase simulation and a bot inspector. Duration/controller settings apply to the next restart. Phase jumps execute every intervening rules tick.
 
-## Visual iteration
+## Code map
 
-- `src/App.tsx`: dashboard, inspectors, fleet cards, orders and dialogs.
-- `src/styles.css`: typography, panel density, color, responsive layout and feedback.
-- `src/components/GalaxyMap.tsx`: SVG scene, detail levels, camera, routes and minimap.
-- `src/demo/galaxy.ts`: seeded generation, initial state and graph routing.
-- `src/demo/territory.ts`: Voronoi cells, merged owner boundaries and corner smoothing.
-- `src/demo/simulation.ts`: temporary movement, battle, mining, construction and rival behavior.
-- `src/demo/catalog.ts`: civilization palette, independent art references and prototype ship values.
+| File                                                    | Responsibility                                                                             |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/demo/balance.ts`                                   | Central ship stats, timings, costs, income, score, buffs and objective balance             |
+| `src/demo/galaxy.ts`, `random.ts`, `routes.ts`          | Seeded 28-system generation and lane routing                                               |
+| `src/demo/commands.ts`                                  | Shared human/bot build, formation, movement, retreat and stance commands                   |
+| `src/demo/simulation.ts`                                | Fixed one-second economy, movement, capture, mining, scoring and match lifecycle           |
+| `src/demo/combat.ts`                                    | Per-ship hull damage, simultaneous volleys, casualties and rewards                         |
+| `src/demo/ai.ts`, `objectives.ts`                       | Local utility policies, objective schedules, roaming threat and curated chat               |
+| `src/components/GalaxyMap.tsx`, `src/demo/territory.ts` | Existing SVG camera and territory renderer, extended with system interiors and map battles |
+| `src/App.tsx`, `src/components/QuickConquest.tsx`       | Existing dashboard plus match HUD, commands, standings, chat, dev tools and results        |
+| `scripts/generate-assets.mjs`                           | Reproducible original SVG stars, belts, facilities and neutral objectives                  |
 
-Only a small asset selection was copied into this repository. Every copied file, original path and use is recorded in [asset provenance](docs/ASSET_PROVENANCE.md), with checksums in `public/assets/provenance.json`.
-
-Desktop is the design target. Side panels scroll at short laptop heights; narrow screens expose fleet management through navigation and stack the inspector below the map. Full mobile interaction design, collision-free labeling at every scale and final faction-specific hull sets remain future visual work.
-
-Read [AGENTS.md](AGENTS.md) before working here. All Space Explorer reference repositories remain read-only. [The Phase 1 brief](phase1_prompt.txt) supersedes the implementation priority in the earlier architecture documents. Those six documents remain future reference: [architecture](docs/PROJECT_ARCHITECTURE.md), [reuse audit](docs/REFERENCE_REUSE_AUDIT.md), [galaxy](docs/GALAXY_MODEL.md), [security](docs/PVP_SECURITY_MODEL.md), [bots](docs/BOT_ARCHITECTURE.md), [implementation plan](docs/IMPLEMENTATION_PLAN.md). Their proposed production systems are not part of this prototype. **Phase 2 has not started.**
+The earlier [architecture](docs/PROJECT_ARCHITECTURE.md), [reuse audit](docs/REFERENCE_REUSE_AUDIT.md), [galaxy](docs/GALAXY_MODEL.md), [security](docs/PVP_SECURITY_MODEL.md), [bots](docs/BOT_ARCHITECTURE.md) and [implementation plan](docs/IMPLEMENTATION_PLAN.md) remain future Campaign/multiplayer reference. Their production scope and Battle Lab V2 requirements are superseded **for this local phase** by [prompt_02.txt](prompt_02.txt). No production work is authorized by this implementation. Read [AGENTS.md](AGENTS.md); reference repositories remain read-only.

@@ -1,0 +1,582 @@
+.match-hud {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 13px 22px;
+  border-bottom: 1px solid var(--border, #29343e);
+  background: linear-gradient(100deg, #14232c, #111921);
+  position: relative;
+  min-height: 73px;
+}
+.match-hud > div > small,
+.match-hud small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 1.1px;
+  color: #91a8b5;
+}
+.match-hud strong {
+  font-size: 23px;
+  color: #e4d1a6;
+  font-variant-numeric: tabular-nums;
+}
+.match-hud em {
+  font-size: 11px;
+  font-style: normal;
+  color: #93afbe;
+}
+.objective-status {
+  display: flex;
+  gap: 15px;
+  margin-left: auto;
+}
+.objective-status button {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  text-align: left;
+  font-size: 9px;
+  color: #d6c3a1;
+}
+.objective-status img {
+  width: 37px;
+  height: 37px;
+}
+.objective-status small {
+  font-size: 8px;
+  margin-top: 4px;
+  letter-spacing: 0;
+}
+.domination-alert {
+  position: absolute;
+  top: 100%;
+  left: 12%;
+  right: 12%;
+  z-index: 4;
+  background: #5a3325 !important;
+  padding: 8px;
+  color: #ffe1b6 !important;
+  font-size: 11px;
+  box-shadow: 0 4px 18px #0008;
+}
+.system-details {
+  padding: 0 0 14px;
+  border-bottom: 1px solid #26343e;
+  margin-bottom: 14px;
+}
+.system-details > .eyebrow {
+  font-size: 8px;
+}
+.planet-roster {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 13px 0;
+}
+.planet-roster img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+.planet-roster small {
+  font-size: 9px;
+  line-height: 1.6;
+  margin-left: auto;
+  color: #9baeb8;
+}
+.strategic-bonus,
+.neutral-contact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+}
+.strategic-bonus img {
+  width: 34px;
+  height: 34px;
+}
+.strategic-bonus strong,
+.neutral-contact strong {
+  display: block;
+  font-size: 11px;
+  color: #ddc393;
+}
+.strategic-bonus small,
+.neutral-contact small {
+  display: block;
+  font-size: 9px;
+  color: #9daeb9;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+.neutral-contact img {
+  width: 40px;
+  height: 60px;
+  object-fit: contain;
+}
+.subtle-note,
+.contact-estimate {
+  font-size: 10px !important;
+  line-height: 1.7;
+  color: #8299a6 !important;
+  margin: 8px 0;
+}
+.capture-status {
+  font-size: 10px;
+  color: #a9d5da;
+}
+.capture-status progress {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  accent-color: #90cbd3;
+  height: 4px;
+}
+.fleet-orders {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #12212a;
+  border-top: 1px solid #30434f;
+  flex-wrap: wrap;
+}
+.fleet-orders label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 8px;
+  color: #a2b8c4;
+  letter-spacing: 1px;
+}
+.fleet-orders select {
+  background: #172a35;
+  border: 1px solid #3b505d;
+  color: #d6e2e5;
+  padding: 6px;
+  font-size: 11px;
+}
+.fleet-orders button {
+  padding: 7px 12px;
+  border: 1px solid #395362;
+  font-size: 10px;
+}
+.fleet-orders small {
+  font-size: 9px;
+  color: #8ea6b4;
+  margin-left: auto;
+}
+.battle-tray {
+  display: flex;
+  gap: 6px;
+  overflow: auto;
+  max-height: 96px;
+  background: #281f1a;
+  border-top: 1px solid #745a42;
+  flex-shrink: 0;
+}
+.battle-tray button {
+  flex: 1;
+  min-width: 190px;
+  text-align: left;
+  padding: 8px 12px;
+}
+.battle-tray strong {
+  font-size: 12px;
+  color: #e8b280;
+}
+.battle-tray small {
+  display: block;
+  font-size: 9px;
+  margin: 5px 0;
+  color: #bca995;
+}
+.battle-tray progress {
+  width: 100%;
+  height: 3px;
+  accent-color: #dda573;
+}
+.command-feed {
+  border-top: 1px solid #33404a;
+  padding: 14px 18px;
+}
+.feed-tabs {
+  display: flex;
+  gap: 14px;
+  border-bottom: 1px solid #30404a;
+}
+.feed-tabs button {
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 0 0 10px;
+}
+.feed-tabs .active {
+  color: #e1c48d;
+  border-bottom: 1px solid #e1c48d;
+}
+.standings-list > button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  text-align: left;
+  padding: 9px 0;
+  border-bottom: 1px solid #20303b;
+}
+.standings-list b {
+  font-size: 10px;
+  color: #778f9c;
+}
+.standings-list i {
+  width: 4px;
+  height: 22px;
+}
+.standings-list span {
+  font-size: 11px;
+  flex: 1;
+}
+.standings-list small {
+  display: block;
+  font-size: 8px;
+  color: #8c9eaa;
+  margin-top: 4px;
+}
+.standings-list strong {
+  font-size: 12px;
+  color: #cab990;
+}
+.own-ranking {
+  background: #1b344144;
+  color: #9dd4df;
+}
+.active-bonuses {
+  margin-top: 18px;
+}
+.active-bonuses button,
+.active-bonuses p {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 10px;
+  line-height: 1.6;
+  padding: 8px 0;
+  color: #b7c2c7;
+}
+.active-bonuses small {
+  display: block;
+  font-size: 9px;
+  color: #d4bd8c;
+}
+.chat-messages {
+  max-height: 260px;
+  overflow: auto;
+  padding: 8px 0;
+}
+.chat-messages p {
+  padding: 8px 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.chat-messages strong {
+  display: block;
+  font-size: 9px;
+}
+.chat-messages small {
+  display: block;
+  color: #647d8b;
+  font-size: 8px;
+}
+.command-feed form {
+  display: flex;
+  gap: 5px;
+}
+.command-feed input {
+  min-width: 0;
+  width: 100%;
+  background: #0b1720;
+  border: 1px solid #304754;
+  color: #c5d9df;
+  padding: 8px;
+  font-size: 10px;
+}
+.command-feed form button {
+  font-size: 10px;
+  color: #e0c896;
+}
+.dev-panel {
+  max-height: 85vh;
+  overflow-y: auto;
+  width: 335px !important;
+}
+.dev-extras label {
+  margin: 13px 0;
+  display: block;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.dev-extras select {
+  display: block;
+  width: 100%;
+  background: #12202b;
+  border: 1px solid #3d5360;
+  color: #cedbe0;
+  padding: 7px;
+  margin-top: 7px;
+}
+.dev-extras .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dev-extras input[type="checkbox"] {
+  width: auto;
+}
+.dev-extras > button {
+  border: 1px solid #526271;
+  padding: 8px;
+  width: 100%;
+  font-size: 10px;
+}
+.bot-inspector {
+  padding: 10px;
+  background: #08151d;
+  color: #b1c4cd;
+  line-height: 1.6;
+}
+.bot-inspector small {
+  font-size: 9px;
+}
+.fleet-formation {
+  padding: 16px 0;
+  border-block: 1px solid #30424d;
+  margin-bottom: 14px;
+}
+.fleet-formation > div {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0;
+}
+.fleet-formation label {
+  flex: 1;
+  font-size: 10px;
+  color: #a7bbc7;
+}
+.fleet-formation input {
+  display: block;
+  width: 100%;
+  background: #111e28;
+  border: 1px solid #38505e;
+  color: #cbdde5;
+  padding: 8px;
+  margin: 6px 0;
+}
+.fleet-formation small {
+  font-size: 9px;
+}
+.quantity-field {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 10px;
+  color: #b4c5cf;
+  margin: 20px 0;
+}
+.quantity-field select {
+  padding: 8px 20px;
+  background: #162630;
+  color: #e8d3aa;
+  border: 1px solid #405664;
+}
+.quantity-field small {
+  font-size: 9px;
+  color: #8ea2af;
+}
+.result-backdrop {
+  z-index: 150;
+}
+.match-result {
+  background: radial-gradient(at 50% 0, #26303a, #0e1922 65%);
+  border: 1px solid #6c6757;
+  width: min(1000px, 95vw);
+  max-height: 94vh;
+  overflow: auto;
+  padding: 38px;
+  color: #bacbd4;
+  box-shadow: 0 20px 100px #000b;
+  outline: none;
+}
+.match-result > h1 {
+  color: #e6c994;
+  font-size: 46px;
+  letter-spacing: 9px;
+  margin: 12px 0;
+}
+.match-result > p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+.result-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  margin: 25px 0;
+}
+.match-result table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  margin-bottom: 24px;
+}
+.match-result th {
+  text-align: left;
+  color: #8fa7b5;
+  font-weight: 400;
+  font-size: 9px;
+  padding: 10px 5px;
+  border-bottom: 1px solid #45535b;
+}
+.match-result td {
+  padding: 11px 5px;
+  border-bottom: 1px solid #293b46;
+}
+.match-result td small {
+  font-size: 8px;
+  color: #789eaf;
+}
+.result-stats > div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 8px 0;
+  border-bottom: 1px solid #273943;
+}
+.result-stats strong {
+  color: #d5c093;
+}
+.result-stats p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #91a7b5;
+}
+.history-chart {
+  width: 100%;
+  border-bottom: 1px solid #496171;
+  background: linear-gradient(#14232b, #111b22);
+}
+.result-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.map-battle {
+  cursor: pointer;
+}
+.map-battle circle {
+  animation: battle-ring 3s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.map-battle path {
+  animation: weapon-flash 1s ease-in-out infinite;
+}
+.map-battle text {
+  fill: #f1c398;
+  font-size: 8px;
+  letter-spacing: 1px;
+  paint-order: stroke;
+  stroke: #101823;
+  stroke-width: 3px;
+}
+.system-interior {
+  pointer-events: none;
+}
+.system-interior [role="button"] {
+  pointer-events: auto;
+}
+.planet-hero {
+  height: 155px !important;
+}
+.operations-panel .fleet-list {
+  max-height: 320px;
+  overflow: auto;
+}
+.queue-list {
+  max-height: 170px;
+  overflow: auto;
+}
+.galaxy-stage {
+  min-height: 260px;
+}
+.ship-option > div > small {
+  font-size: 10px;
+  color: #9eaebb;
+}
+.is-paused .map-battle * {
+  animation-play-state: paused !important;
+}
+@keyframes battle-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes weapon-flash {
+  0%,
+  65%,
+  100% {
+    opacity: 0.08;
+  }
+  70%,
+  85% {
+    opacity: 0.85;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-battle * {
+    animation: none !important;
+  }
+}
+@media (max-width: 1200px) {
+  .objective-status {
+    gap: 3px;
+  }
+  .objective-status button > span {
+    font-size: 8px;
+  }
+  .objective-status small {
+    max-width: 90px;
+  }
+  .match-hud {
+    padding: 10px;
+    gap: 12px;
+  }
+  .match-hud strong {
+    font-size: 19px;
+  }
+}
+@media (max-width: 700px) {
+  .match-hud {
+    flex-wrap: wrap;
+  }
+  .objective-status {
+    margin-left: 0;
+  }
+  .result-layout {
+    grid-template-columns: 1fr;
+  }
+  .match-result {
+    padding: 20px;
+  }
+  .match-result > h1 {
+    font-size: 32px;
+  }
+  .fleet-orders small {
+    width: 100%;
+    margin: 0;
+  }
+  .fleet-formation > div {
+    flex-wrap: wrap;
+  }
+  .fleet-formation label {
+    min-width: 40%;
+  }
+}

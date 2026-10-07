@@ -1,0 +1,2062 @@
+SPACE WARS — PHASE 2 LOCAL MATCH PROTOTYPE
+8-PLAYER QUICK CONQUEST / FULL PLAYABLE LOCAL MATCH
+
+We have validated the visual direction of the current Space Wars prototype.
+
+The existing dashboard and galaxy map are GOOD ENOUGH that I want to continue developing the game.
+
+Do NOT throw away the current prototype and rebuild it from scratch unless a specific subsystem genuinely requires replacement.
+
+Build on what already works.
+
+The purpose of this phase is to answer a new question:
+
+"Is Space Wars actually FUN as a fast 8-player free-for-all strategy match?"
+
+This is still a LOCAL-ONLY gameplay prototype.
+
+We are NOT building the production multiplayer backend yet.
+
+We are NOT implementing Supabase yet.
+
+We are NOT implementing accounts yet.
+
+We are going to turn the current visual prototype into a real, complete, locally playable match:
+
+1 human player
++
+7 local AI commanders
+
+The player should be able to play from opening expansion through wars and objectives to an actual victory/defeat screen.
+
+==================================================
+READ THIS FIRST
+==================================================
+
+Before changing code:
+
+1. Read AGENTS.md.
+2. Read the existing Space Wars architecture documents for context.
+3. Inspect the CURRENT Space Wars implementation.
+4. Run the current prototype.
+5. Understand what currently works visually and interactively.
+6. Preserve good existing work.
+7. Inspect the READ-ONLY Space Explorer Web reference project for existing approved assets that can be reused.
+
+READ-ONLY reference repositories remain:
+
+- Space Explorer RPG Web
+- Space Explorer RPG Backend
+
+Do NOT modify either one.
+
+SPACE WARS IS THE ONLY WRITABLE PROJECT.
+
+==================================================
+IMPORTANT CHANGE IN PRODUCT DIRECTION
+==================================================
+
+We now see two possible future games in this universe.
+
+A future persistent "Campaign" game may last days/weeks and use deeper combat, diplomacy and persistent progression.
+
+THIS PROTOTYPE IS NOT THAT GAME.
+
+For now we are building the fast version:
+
+SPACE WARS — QUICK CONQUEST
+
+Working product concept:
+
+An 8-player free-for-all browser strategy match lasting approximately 35–45 minutes.
+
+Every commander starts from an equal home system.
+
+Players rapidly:
+
+- expand through nearby star systems
+- capture planets
+- mine asteroid fields
+- construct fleets
+- fight pirates
+- contest strategic systems
+- fight the other seven commanders
+- compete for special objectives
+- react to large neutral threats
+- accumulate Dominion Score
+- attempt to control the galaxy before time expires
+
+The game should feel fast and active but NOT like an APM/click-spam RTS.
+
+I do NOT want:
+
+click click click click 50 times per second.
+
+I DO want:
+
+one meaningful strategic decision every roughly 10–30 seconds while previously issued orders continue executing automatically.
+
+The player should frequently be thinking:
+
+- Where do I expand?
+- What resource do I need?
+- Do I fight these pirates?
+- Do I contest that strategic system?
+- Should I attack this weakened commander?
+- Should I reinforce my border?
+- Is that objective worth the risk?
+- Do I build more cheap ships or save for heavy ships?
+- Do I retreat?
+- Can I steal an objective while two rivals are fighting?
+
+==================================================
+CORE MATCH FORMAT
+==================================================
+
+Build a complete local match around:
+
+- 8 total commanders
+- 1 human
+- 7 AI commanders
+- free-for-all
+- no teams
+- no permanent alliances
+- everyone is ultimately competing against everyone else
+
+Target normal match duration:
+
+approximately 40 minutes
+
+Make match duration configurable in DEV controls.
+
+Also support accelerated testing so we can run/test shorter matches without changing all underlying balance values manually.
+
+Suggested presets:
+
+QUICK TEST:
+10 minutes
+
+NORMAL:
+40 minutes
+
+Possible future:
+20 / 30 / 60 minute variants
+
+But NORMAL should be balanced around roughly 40 minutes for now.
+
+==================================================
+MOST IMPORTANT MAP REDESIGN
+==================================================
+
+The current prototype largely treats planet after planet as strategic map nodes.
+
+That no longer looks right.
+
+Redesign the galaxy around STAR SYSTEMS.
+
+The hierarchy should become:
+
+GALAXY
+    ↓
+STAR SYSTEM
+    ↓
+STAR
+PLANETS
+ASTEROID FIELDS
+SPECIAL OBJECTS
+FLEETS
+
+The strategic travel graph connects STAR SYSTEMS.
+
+Not individual planets.
+
+Example:
+
+SOL SYSTEM
+    Sun
+    Earth
+    Mars
+    asteroid belt
+
+        ||
+        || hyperspace/travel lane
+        \/
+
+VEGA SYSTEM
+    Vega star
+    two planets
+    asteroid field
+
+        ||
+        \/
+
+KARETH SYSTEM
+    red dwarf
+    three planets
+
+This should visually and logically feel like traveling across a galaxy.
+
+==================================================
+STAR SYSTEM VISUAL DESIGN
+==================================================
+
+Each star system should contain:
+
+- one primary star
+- usually 1–4 planets
+- optionally 0–2 asteroid fields
+- optionally strategic/special objects
+- fleets currently present
+
+Do not display every internal object at every zoom level.
+
+ZOOMED OUT:
+
+Show:
+
+- star
+- system name
+- owner/faction
+- territory
+- major fleet presence
+- strategic objective icon if present
+
+ZOOMED IN:
+
+Reveal:
+
+- planets positioned around the star
+- asteroid belts/fields
+- mining activity
+- fleets
+- special structures/objectives
+- resource indicators
+- system-specific details
+
+The user should feel rewarded by zooming into a system.
+
+==================================================
+SUN / STAR ASSETS
+==================================================
+
+The reference game currently does not provide enough star/sun assets.
+
+YOU ARE EXPLICITLY AUTHORIZED TO CREATE NEW ORIGINAL VISUAL ASSETS NEEDED FOR THIS PROTOTYPE.
+
+This includes:
+
+- stars/suns
+- star variants
+- asteroid variants
+- system effects
+- strategic structures
+- pirate markers
+- ancient structures
+- boss/entity graphics
+- neutral objective markers
+- map icons
+- UI indicators
+- environmental effects
+- simple background elements
+- any other assets needed to make the game feel cohesive and alive
+
+Do NOT block implementation waiting for owner-supplied art.
+
+==================================================
+ART CONTINUITY REQUIREMENT
+==================================================
+
+New assets must visually fit the CURRENT Space Wars / Space Explorer asset language.
+
+Before creating them:
+
+1. inspect existing planet assets
+2. inspect existing ship assets
+3. inspect existing faction/species visuals
+4. inspect current Space Wars dashboard styling
+5. derive a consistent visual language
+
+New assets must NOT look like:
+
+- unrelated stock art
+- generic emoji
+- inconsistent clip art
+- random AI-generated pieces from completely different styles
+- photorealistic objects beside stylized game assets
+- twenty completely different visual aesthetics
+
+They must feel as though they belong to the same game.
+
+Prioritize:
+
+- consistent detail density
+- compatible lighting
+- compatible outlines/silhouettes
+- similar texture/detail philosophy
+- consistent viewing angle where applicable
+- controlled palette
+- readable silhouettes at map size
+
+Do not over-detail small strategic map assets.
+
+They need to remain readable when displayed at small sizes.
+
+==================================================
+CREATING NEW ASSETS
+==================================================
+
+You may create original assets using appropriate methods available in the project/tooling.
+
+SVG is strongly encouraged for:
+
+- stars
+- icons
+- system markers
+- strategic facilities
+- objective symbols
+- status indicators
+- nebula/environment overlays where appropriate
+
+Raster assets may be created when appropriate and supported.
+
+Procedural/generated SVG assets are completely acceptable if they look polished.
+
+Do NOT create one sun and recolor it eight times.
+
+Create visual variety.
+
+Suggested initial star families:
+
+- yellow main-sequence
+- orange star
+- red dwarf
+- blue-white star
+- large red giant
+- pale white star
+- binary visual variant
+- unusual energetic star
+
+Not every system needs a totally unique star.
+
+But the galaxy must not feel repetitive.
+
+Similarly create multiple asteroid/belt visual variants.
+
+==================================================
+ASSET PROVENANCE
+==================================================
+
+Continue maintaining:
+
+docs/ASSET_PROVENANCE.md
+
+Record:
+
+- reused reference asset
+- original path
+- copied Space Wars path
+
+For newly created assets mark:
+
+ORIGINAL SPACE WARS ASSET
+
+and describe its intended use.
+
+==================================================
+GALAXY SIZE
+==================================================
+
+The old 140–180 system visual prototype is too large for this match format.
+
+Create a compact but strategically meaningful match galaxy.
+
+Initial target:
+
+24–32 STAR SYSTEMS
+
+Recommended starting point:
+
+28 systems
+
+8 commanders means approximately:
+
+3–4 meaningful systems per commander plus shared/core objectives.
+
+Each system can contain multiple internal objects.
+
+Therefore total visible objects may still be roughly:
+
+80–130 planets/asteroids/special objects
+
+without requiring 100 strategic nodes.
+
+This should create enough room to expand while bringing players into conflict reasonably quickly.
+
+==================================================
+GALAXY LAYOUT
+==================================================
+
+Generate the galaxy deterministically from a seed.
+
+Each match should vary while remaining fair.
+
+Structure approximately:
+
+OUTER REGION
+- 8 starting home systems
+- safer initial expansion
+- basic resource opportunities
+
+MID REGION
+- contested neutral systems
+- better resources
+- pirates
+- strategic bonuses
+- first major player collisions
+
+CORE REGION
+- strongest objectives
+- valuable systems
+- ancient/neutral threats
+- major score opportunities
+- endgame conflict
+
+Do NOT literally make perfect concentric circles unless it looks good.
+
+It should feel like a natural generated star network.
+
+But use this concept for balance.
+
+==================================================
+PLAYER SPAWNS
+==================================================
+
+Place eight home systems approximately evenly around the galaxy.
+
+Requirements:
+
+- comparable early expansion opportunities
+- comparable access to basic resources
+- multiple possible expansion routes
+- no player spawning immediately trapped
+- no player receiving obviously dominant starting territory
+
+The same galaxy seed must generate the same spawns.
+
+The human gets one spawn.
+
+Seven bots receive the others.
+
+==================================================
+HOME SYSTEM
+==================================================
+
+For this prototype:
+
+HOME SYSTEM IS:
+
+- permanently owned by its commander
+- non-capturable
+- non-attackable
+
+External systems are contestable.
+
+This prevents early elimination and allows comeback testing.
+
+Represent home systems clearly but elegantly.
+
+Do not create giant "SAFE ZONE" UI everywhere.
+
+==================================================
+PLANET OWNERSHIP
+==================================================
+
+Strategic system control determines territory.
+
+Planets inside the system visually reflect that control.
+
+For this prototype:
+
+capturing a system means controlling its planets/resources unless specifically designated otherwise.
+
+We do NOT need independent planet warfare yet.
+
+==================================================
+RESOURCES
+==================================================
+
+Continue using three core resources:
+
+CREDITS
+ALLOY
+FUEL
+
+Keep the economy understandable.
+
+CREDITS:
+general economic currency / operating spending
+
+ALLOY:
+shipbuilding and military production
+
+FUEL:
+fleet movement and some operations
+
+Do NOT introduce ten resources.
+
+==================================================
+ECONOMIC SOURCES
+==================================================
+
+Possible income:
+
+HOMEWORLD:
+small baseline income
+
+CONTROLLED PLANETS:
+Credits
+
+ASTEROIDS:
+Alloy and/or Fuel
+
+SPECIAL LOCATIONS:
+situational bonuses
+
+PIRATES / OBJECTIVES:
+one-time or temporary rewards
+
+Economy should keep the player active but should not become a spreadsheet simulator.
+
+==================================================
+FAST PACING
+==================================================
+
+This is a 40-minute match.
+
+Everything must be dramatically faster than the persistent future Campaign mode.
+
+Initial NORMAL-mode ranges to test:
+
+Frigate:
+20–30 seconds
+
+Destroyer:
+35–50 seconds
+
+Cruiser:
+60–90 seconds
+
+Dreadnought:
+2–3 minutes
+
+Typical nearby fleet travel:
+20–50 seconds
+
+Long movement:
+1–2 minutes
+
+Asteroid mining cycle:
+30–60 seconds
+
+Neutral system capture:
+15–30 seconds after uncontested control
+
+These are starting balance values.
+
+Make them easy to configure centrally.
+
+DO NOT scatter numbers throughout components.
+
+Create a central local prototype balance/config file.
+
+==================================================
+SHIP CLASSES
+==================================================
+
+Use four classes:
+
+FRIGATE
+DESTROYER
+CRUISER
+DREADNOUGHT
+
+Each should have a clear role.
+
+Suggested prototype identity:
+
+FRIGATE
+- cheap
+- fast
+- light
+- useful for expansion/scouting
+
+DESTROYER
+- anti-small / general combat
+- stronger but still reasonably fast
+
+CRUISER
+- major line combat ship
+- strong sustained combat
+
+DREADNOUGHT
+- expensive
+- slow
+- powerful
+- major commitment
+
+Do not attempt perfect final balance.
+
+But fleet composition should matter.
+
+==================================================
+BUILDING SHIPS
+==================================================
+
+Retain/improve the current production UI.
+
+Player should queue ships.
+
+Show:
+
+- cost
+- build time
+- current queue
+- progress
+- reserve ships
+
+Do not force excessive clicks.
+
+If player wants:
+
+Build 3 Frigates
+
+allow convenient quantity controls where reasonable.
+
+==================================================
+FLEETS
+==================================================
+
+Allow players/bots to organize ships into fleets.
+
+Keep interaction simple.
+
+Player should be able to:
+
+- view fleets
+- select fleet
+- inspect composition
+- move fleet
+- attack
+- defend
+- mine
+- retreat where appropriate
+
+Do not implement complicated fleet templates yet.
+
+==================================================
+MAP-BASED COMBAT
+==================================================
+
+IMPORTANT:
+
+For Quick Conquest, DO NOT transition into the separate full Battle Lab screen for ordinary combat.
+
+Combat should happen IN THE GALAXY / STAR SYSTEM VIEW.
+
+This fast game needs simultaneous strategic activity.
+
+A player may have:
+
+one battle at Vega
+while
+another enemy approaches Helix
+while
+a mining fleet is at Pallas.
+
+The galaxy should remain playable during battle.
+
+==================================================
+COMBAT PRESENTATION
+==================================================
+
+When hostile fleets meet:
+
+Display battle information within/around the system.
+
+Example:
+
+BATTLE OF VEGA
+
+YOU
+Power 6,850
+
+vs
+
+KRAGGS
+Power 5,900
+
+Ships visible as small top-down units/icons where practical.
+
+Show:
+
+- current force strength
+- casualties
+- battle progress
+- faction colors
+- active stance
+- retreat state
+
+Use simple visual battle effects where tasteful:
+
+- weapon flashes
+- missile traces
+- shield/hit pulses
+- destroyed ship markers
+- subtle explosions
+
+Do NOT build a huge animation system.
+
+The strategic view remains primary.
+
+==================================================
+COMBAT LOGIC
+==================================================
+
+For this local prototype, implement a lightweight but meaningful real-time/tick-based combat resolver.
+
+DO NOT integrate the full Battle Lab V2 yet unless significant existing code can be reused without derailing this phase.
+
+Combat should account for:
+
+- ship class
+- number of ships
+- attack
+- defense/hull
+- perhaps range/speed abstractly
+- fleet stance
+- deterministic seeded variation
+
+Individual ships may take damage/die.
+
+Avoid pure:
+
+FleetPowerA > FleetPowerB => instant win
+
+Battles should last roughly:
+
+10–40 seconds
+
+depending on force size.
+
+This gives the player time to react.
+
+==================================================
+BATTLE COMMANDS
+==================================================
+
+While a battle is active, provide a SMALL number of meaningful commands.
+
+Initial examples:
+
+AGGRESSIVE
+higher offense / more losses
+
+DEFENSIVE
+reduced damage taken / reduced offensive output
+
+FOCUS CAPITALS
+prioritize Cruiser/Dreadnought targets
+
+FOCUS ESCORTS
+prioritize smaller ships
+
+RETREAT
+attempt to withdraw surviving fleet
+
+Do NOT turn this into an RTS unit-control interface.
+
+The strategic choice is the point.
+
+Players should not manually fly ships.
+
+==================================================
+RETREAT
+==================================================
+
+Retreat should:
+
+- take some time
+- risk additional losses
+- return surviving fleet toward previous/friendly system
+
+Do not teleport.
+
+Bots should also understand retreat.
+
+==================================================
+MULTIPLE BATTLES
+==================================================
+
+Allow multiple systems to have battles simultaneously.
+
+The human should receive clear alerts.
+
+Example:
+
+⚠ BATTLE STARTED — VEGA
+
+⚠ ENEMY FLEET DETECTED — HELIX
+
+The map must not drag the player forcibly into every battle.
+
+==================================================
+THIRD-PARTY OPPORTUNISM
+==================================================
+
+FFA should naturally allow third parties.
+
+Example:
+
+Player A and Player B destroy much of each other's fleets.
+
+Player C enters afterward and captures the weakened system.
+
+ALLOW THIS.
+
+This is a feature.
+
+Do not artificially isolate two-player wars.
+
+For prototype simplicity, avoid simultaneous three-sided combat in the exact same battle if it becomes technically messy.
+
+You may process arriving hostile fleets sequentially / as follow-up engagements.
+
+Make the behavior deterministic and understandable.
+
+==================================================
+PIRATES
+==================================================
+
+Add PIRATES from the Space Explorer universe as common neutral enemies.
+
+Use existing pirate assets where available.
+
+Pirates should occupy some systems/asteroid fields.
+
+They provide:
+
+- early combat
+- Credits
+- Alloy
+- Fuel
+- control of useful resources
+- optional risk/reward decisions
+
+Example:
+
+BLACK FANG PIRATES
+Power ~1,600
+
+Reward:
++900 Credits
++400 Alloy
+
+Pirates should vary in strength.
+
+Possible categories:
+
+Raider Camp
+Pirate Patrol
+Pirate Stronghold
+
+Do not overcomplicate pirate diplomacy.
+
+They are hostile PvE objectives.
+
+==================================================
+PIRATE BEHAVIOR
+==================================================
+
+Some pirates may remain stationary.
+
+Some pirate fleets may occasionally raid nearby controlled systems.
+
+Keep frequency reasonable.
+
+Pirates should create activity without constantly disrupting every player.
+
+==================================================
+STRATEGIC SYSTEM BONUSES
+==================================================
+
+Add special strategic locations.
+
+These should be one of the reasons players fight over specific parts of the galaxy.
+
+Bonuses should generally be:
+
+approximately 5–10%
+
+Large enough to matter.
+
+Small enough that capturing one does not decide the match.
+
+Examples:
+
+HELIOS FORGE
+Ship construction speed +8%
+
+NEXUS RELAY
+Fleet travel speed +7%
+
+DEEP SENSOR ARRAY
+Improved nearby fleet detection / scouting
+
+TITANIUM BELT
+Alloy income +10%
+
+ANCIENT LOGISTICS HUB
+Fleet Fuel costs -8%
+
+TRADE NEXUS
+Credits income +10%
+
+Do not necessarily use these exact names if generated alternatives fit better.
+
+Create attractive original icons/assets for them.
+
+==================================================
+MATCH VARIETY
+==================================================
+
+Not every match should place the same strategic bonuses in the same locations.
+
+Seed controls placement.
+
+Each match should create different strategic priorities.
+
+But fairness matters.
+
+Do not spawn every powerful bonus beside one player's homeworld.
+
+==================================================
+MAJOR NEUTRAL OBJECTIVES
+==================================================
+
+Add original Space Wars equivalents of large neutral "boss" objectives.
+
+The inspiration is the GAMEPLAY ROLE of major objectives from strategy/MOBA games:
+
+players take a risk fighting a powerful neutral target to earn a strong temporary or strategic advantage.
+
+Do NOT directly copy copyrighted creatures/lore from other franchises.
+
+Do NOT use names such as Delvers, Sentinels from another work, etc.
+
+Create original Space Wars lore/assets.
+
+==================================================
+ANCIENT GUARDIAN
+==================================================
+
+Add at least one STATIONARY major neutral objective.
+
+Working concept:
+
+ANCIENT GUARDIAN
+
+Could guard:
+
+- ancient structure
+- central system
+- powerful strategic artifact
+
+Requires significant fleet strength.
+
+Reward should be meaningful.
+
+Example reward possibilities:
+
+- large Dominion Score award
+- temporary +10% fleet damage
+- temporary +15% resource output
+- temporary construction bonus
+- powerful strategic system control
+
+Use one sensible version for prototype.
+
+The Guardian should visually feel important.
+
+Create necessary original asset(s).
+
+==================================================
+COSMIC ENTITY / LEVIATHAN
+==================================================
+
+Add one rare major roaming neutral threat/objective.
+
+Working category:
+
+VOID LEVIATHAN
+
+Name may be improved if a more original universe-consistent name fits.
+
+Do NOT copy another franchise's creature.
+
+This entity should be:
+
+- visually striking
+- extremely strong
+- uncommon
+- strategically important
+
+It may:
+
+- appear after midgame
+- travel between systems
+- attack fleets
+- temporarily threaten occupied systems
+
+Defeating it grants a major temporary advantage and/or significant Dominion Score.
+
+Example:
+
+LEVIATHAN RESONANCE
+Fleet speed +10%
+Fleet damage +8%
+Duration: 3 minutes
+
+Numbers are provisional.
+
+==================================================
+ENTITY SPAWN TIMING
+==================================================
+
+Do not unleash everything at match start.
+
+Use match phases.
+
+Possible NORMAL 40-minute progression:
+
+0–5 MINUTES
+OPENING
+- rapid neutral expansion
+- weak pirates
+- mining
+
+5–15 MINUTES
+EXPANSION
+- borders begin touching
+- medium pirates
+- strategic systems become contested
+
+15–25 MINUTES
+WAR
+- PvP becomes common
+- Guardian objective becomes realistically attackable
+- major strategic systems matter
+
+25–35 MINUTES
+ESCALATION
+- Void Leviathan / cosmic threat appears
+- center/core becomes increasingly valuable
+
+35–40 MINUTES
+ENDGAME
+- score pressure increases
+- no reason to hide indefinitely
+- winner approaches
+
+For accelerated test modes scale these timings proportionally.
+
+==================================================
+MATCH EVENTS
+==================================================
+
+Add a SMALL amount of global match variation.
+
+Approximately 2–3 events per normal match.
+
+Possible examples:
+
+ALLOY SURGE
+Asteroid Alloy output +40% for 2 minutes
+
+PIRATE INCURSION
+Several new pirate patrols appear
+
+ANCIENT SIGNAL
+Guardian becomes active / its location revealed
+
+SOLAR INSTABILITY
+temporary sensor disruption in a few systems
+
+COSMIC DISTURBANCE
+Leviathan appears
+
+Do not make random events constantly ruin strategy.
+
+They should create opportunities, not random punishment.
+
+==================================================
+DOMINION SCORE
+==================================================
+
+The primary victory system should be DOMINION SCORE.
+
+The match should NOT require killing every other player.
+
+Players score for strategic control and meaningful actions.
+
+Prototype sources may include:
+
+NORMAL CONTROLLED SYSTEM
+steady score over time
+
+STRATEGIC SYSTEM
+higher score over time
+
+CORE SYSTEM
+higher score
+
+PIRATE STRONGHOLD
+one-time reward
+
+GUARDIAN DEFEAT
+major one-time reward
+
+LEVIATHAN DEFEAT
+major reward
+
+ENEMY FLEET DESTRUCTION
+small/moderate reward
+
+Do not over-reward kills compared with territory.
+
+The galaxy map should remain the main objective.
+
+==================================================
+SCORE UI
+==================================================
+
+Display live standings.
+
+Example:
+
+1. Cmdr. Vale       1,840
+2. Korrak           1,620
+3. Admiral Sera     1,570
+...
+
+Show:
+
+- position
+- commander
+- civilization/faction
+- score
+- possibly systems controlled
+
+Bots should be clearly identifiable as AI in appropriate UI.
+
+Do not pretend bots are humans.
+
+==================================================
+ENDGAME PRESSURE
+==================================================
+
+Prevent passive edge turtling from being the optimal final strategy.
+
+Near late game, increase strategic importance of core systems.
+
+Possible implementation:
+
+CORE ASCENDANCY
+
+During final 5 minutes:
+
+Core/strategic systems generate increased Dominion Score.
+
+Example:
+
+Core systems:
+2x score
+
+This naturally pulls fleets toward conflict.
+
+Clearly announce this before activation.
+
+==================================================
+DOMINATION VICTORY
+==================================================
+
+In addition to timer victory, implement an optional early domination win.
+
+Prototype concept:
+
+Control approximately 60% of CAPTURABLE strategic systems
+
+AND
+
+hold that level for 60–90 seconds.
+
+Do not count protected home systems.
+
+Show visible domination countdown.
+
+This prevents an overwhelmingly dominant player from waiting until the timer ends.
+
+Make thresholds configurable.
+
+==================================================
+COMEBACK MECHANIC
+==================================================
+
+Players cannot lose their protected homeworld.
+
+If a commander loses all external territory:
+
+mark them:
+
+RECOVERING
+
+Provide modest recovery help.
+
+Potential prototype mechanic:
+
+EMERGENCY MOBILIZATION
+
+- modest home income increase
+- basic ship production speed increase
+- expires after player recaptures external territory or after time limit
+
+Do NOT give massive free fleets.
+
+Do NOT make intentionally losing optimal.
+
+This is primarily to prevent a player from becoming irrelevant at minute 12.
+
+Bots use the same rule.
+
+==================================================
+AI COMMANDERS
+==================================================
+
+Replace the purely fake/random rival movement with actual LOCAL gameplay AI.
+
+Seven bots should be capable of playing a full match.
+
+This is still not the production server bot architecture.
+
+But make the logic clean and reusable where practical.
+
+Initial personalities:
+
+EXPANSIONIST
+prioritizes neutral territory
+
+AGGRESSOR
+attacks weak rivals
+
+INDUSTRIALIST
+prioritizes mining/economy
+
+TURTLE
+prioritizes defended territory
+
+OPPORTUNIST
+attacks weakened players/objectives
+
+Assign personalities among the seven bots.
+
+Some personality duplication is fine.
+
+==================================================
+BOT DECISIONS
+==================================================
+
+Bots should be able to:
+
+- build ships
+- create/reinforce fleets
+- mine
+- capture neutral systems
+- attack pirates
+- attack players
+- defend
+- retreat
+- contest strategic bonuses
+- attack Guardian when strong enough
+- react to Leviathan
+- react to nearby threats
+- recover after losses
+
+Use weighted utility/scoring logic.
+
+NO LLM calls.
+
+NO hidden resource bonuses.
+
+NO teleportation.
+
+NO instant builds.
+
+Bots follow the same prototype rules as the human.
+
+==================================================
+BOT IMPERFECTION
+==================================================
+
+Bots should not be perfect.
+
+Include:
+
+- reaction delay
+- occasional suboptimal choices
+- personality bias
+- imperfect risk estimates
+
+They should feel like opponents, not deterministic omniscient scripts.
+
+But do not intentionally make them completely stupid.
+
+==================================================
+BOT INFORMATION
+==================================================
+
+Even locally, avoid giving bots exact hidden information unnecessarily.
+
+Use:
+
+- visible systems
+- known territory
+- approximate hostile strength
+- discovered objective information
+
+This prepares us for eventual real multiplayer fairness.
+
+==================================================
+SCOUTING / INFORMATION
+==================================================
+
+Introduce simple scouting.
+
+Do not overbuild fog of war yet.
+
+At minimum:
+
+Known ownership can generally be visible.
+
+Enemy fleet exact composition should not always be.
+
+Possible enemy information:
+
+UNKNOWN FLEET
+Estimated power: 2,000–3,000
+
+Scouting improves estimate temporarily.
+
+Own fleet information is exact.
+
+This does not need production-grade intelligence architecture yet.
+
+==================================================
+GLOBAL CHAT
+==================================================
+
+Add a GLOBAL CHAT panel/tab.
+
+The human can type messages locally.
+
+Bots should occasionally produce curated/context-aware messages.
+
+Examples:
+
+- comments about objectives
+- warnings
+- taunts
+- claims
+- reactions to a major event
+
+Do NOT use an LLM.
+
+Use contextual templates.
+
+Examples:
+
+"Korrak: Stay out of Vega."
+
+"Admiral Sera: Someone stop Vale before he takes the Core."
+
+"Vex: Leviathan spotted near Helix."
+
+Keep frequency low.
+
+Do not flood chat.
+
+==================================================
+NO FORMAL ALLIANCES
+==================================================
+
+Do NOT implement teams or alliances.
+
+This remains FFA.
+
+Chat may allow informal coordination and deception later.
+
+No formal alliance mechanics in this phase.
+
+==================================================
+EVENT LOG
+==================================================
+
+Continue and expand the event log.
+
+Important events:
+
+- system captured
+- fleet launched
+- fleet arrived
+- battle started
+- battle won/lost
+- strategic system captured
+- pirate stronghold cleared
+- Guardian attacked/defeated
+- Leviathan appeared/moved/defeated
+- player entered recovery
+- ship construction complete
+- major global event
+- core endgame activation
+- domination countdown
+
+Clicking relevant entries should focus the system if practical.
+
+==================================================
+NOTIFICATIONS
+==================================================
+
+Important events affecting the human should be noticeable without being obnoxious.
+
+Use:
+
+- subtle toast
+- map pulse
+- sound only if current project already supports tasteful audio easily; otherwise skip
+- event highlighting
+
+Priority examples:
+
+HIGH
+your territory attacked
+major objective appeared
+domination countdown
+
+NORMAL
+ship built
+mining finished
+fleet arrived
+
+==================================================
+MATCH HUD
+==================================================
+
+Add:
+
+MATCH TIMER
+
+DOMINION SCORE / RANK
+
+SYSTEMS CONTROLLED
+
+FLEET POWER
+
+Resources
+
+Major temporary buffs
+
+Current phase:
+
+OPENING
+EXPANSION
+WAR
+ESCALATION
+ENDGAME
+
+Make this readable without overcrowding the screen.
+
+==================================================
+STRATEGIC BUFF UI
+==================================================
+
+When player controls a special system, clearly show active bonus.
+
+Example:
+
+ACTIVE STRATEGIC BONUSES
+
+Helios Forge
++8% Ship Construction
+
+Nexus Relay
++7% Fleet Speed
+
+Temporary objective buffs should show countdown.
+
+==================================================
+MATCH END
+==================================================
+
+Implement complete match conclusion.
+
+Possible outcomes:
+
+VICTORY
+
+DEFEAT
+
+Display:
+
+- final placement
+- Dominion Score
+- systems controlled
+- peak territory
+- battles fought
+- battles won
+- enemy ships destroyed
+- pirates defeated
+- Guardian participation
+- Leviathan result
+- resources mined
+- ships built
+
+Show full 8-player final leaderboard.
+
+Buttons:
+
+PLAY AGAIN
+NEW SEED
+RETURN TO DASHBOARD / RESTART
+
+For now these may simply reset local match state.
+
+==================================================
+VISUAL MATCH HISTORY
+==================================================
+
+If reasonably achievable, record territory snapshots or simple stats over time.
+
+End screen could show:
+
+- territory progression
+- score progression
+
+This is optional.
+
+Do not block core match completion on it.
+
+==================================================
+VISUAL QUALITY REMAINS CRITICAL
+==================================================
+
+Do NOT let gameplay work ruin the good visual prototype.
+
+Continue polishing.
+
+Especially improve:
+
+- stars
+- system structure
+- internal system layout
+- planet placement
+- asteroid placement
+- territory shapes
+- fleet readability
+- battle readability
+- objective icons
+- match HUD
+- event hierarchy
+- zoom behavior
+
+The game should continue feeling cohesive and premium.
+
+==================================================
+AVOID "AI LOOK"
+==================================================
+
+This is important.
+
+New visuals should NOT look like unrelated generated images pasted together.
+
+Maintain deliberate art direction.
+
+Use a controlled design system.
+
+If creating SVG assets:
+
+reuse compatible:
+
+- border thickness
+- glow intensity
+- highlight language
+- icon scale
+- shading approach
+- silhouette complexity
+
+Review the screen as a whole.
+
+If a new asset looks out of place, redesign it.
+
+Consistency is more important than individual asset detail.
+
+==================================================
+PERFORMANCE
+==================================================
+
+Maintain smooth pan/zoom and reasonable browser performance.
+
+We now have:
+
+- ~28 systems
+- internal planets/asteroids
+- fleets
+- battles
+- visual effects
+- objectives
+
+This should still be manageable.
+
+Use sensible animation techniques.
+
+Do not rerender the entire galaxy unnecessarily every animation frame if avoidable.
+
+==================================================
+CENTRAL BALANCE CONFIG
+==================================================
+
+Create a clearly organized prototype balance/config module.
+
+Include:
+
+- match duration
+- phase times
+- build times
+- costs
+- ship stats
+- travel speed
+- mining values
+- resource income
+- pirate strengths/rewards
+- Guardian stats/reward
+- Leviathan stats/reward
+- score rates
+- domination threshold
+- strategic buff values
+- recovery modifiers
+
+Make balancing easy.
+
+We will iterate on this heavily.
+
+==================================================
+DEV / TEST CONTROLS
+==================================================
+
+Keep developer controls.
+
+Add useful controls such as:
+
+- choose seed
+- regenerate galaxy
+- restart match
+- pause
+- x1
+- x2
+- x5
+- x10 simulation speed
+
+Also useful:
+
+- add resources
+- reveal map
+- trigger Guardian
+- trigger Leviathan
+- jump to match phase
+- select bot and inspect current intention
+
+DEV controls must be visually separated from player UI.
+
+==================================================
+BOT DEBUGGING
+==================================================
+
+Provide a lightweight DEV bot inspector.
+
+When selecting bot:
+
+show:
+
+- personality
+- current resources
+- current fleets
+- current goal
+- intended target
+- approximate utility reasoning if convenient
+
+Example:
+
+KORRAK
+Aggressor
+
+Current goal:
+Attack Vega
+
+Reasons:
+Weak visible defender
+Strategic bonus present
+Travel distance low
+
+This will help us balance gameplay.
+
+Do not expose this in normal player view.
+
+==================================================
+DETERMINISM
+==================================================
+
+Given:
+
+same seed
+same player actions
+same simulation timing
+
+the game should be reasonably reproducible where practical.
+
+Use seeded randomness for:
+
+- galaxy generation
+- objective placement
+- pirate placement
+- bot personality allocation
+- major match events
+- combat variation
+
+Do not use Math.random() scattered through gameplay.
+
+Use a central seeded random utility.
+
+==================================================
+SAVE / RELOAD
+==================================================
+
+Still no backend.
+
+If easy, use localStorage to preserve an active local match across refresh.
+
+This is useful but NOT required.
+
+Do not delay core gameplay to build a sophisticated save system.
+
+==================================================
+TESTING
+==================================================
+
+Add meaningful tests around:
+
+GALAXY
+- same seed same galaxy
+- 8 valid home spawns
+- graph connected
+- strategic objectives reasonably distributed
+
+ECONOMY
+- resources cannot become invalid
+- build completes
+- mining rewards occur
+
+FLEETS
+- movement completes
+- ships belong to valid fleet/state
+
+COMBAT
+- battle terminates
+- casualties applied
+- retreat terminates
+- deterministic seeded scenario repeats
+
+TERRITORY
+- capture changes system owner
+- homeworld cannot be captured
+
+SCORE
+- Dominion Score accumulates correctly
+- strategic multiplier works
+- domination countdown behaves
+
+BOTS
+- bots perform actions
+- bots can expand
+- bots can build
+- bots can fight
+- bots do not directly grant themselves resources
+
+MATCH
+- timer ends
+- ranking generated
+- winner selected
+- accelerated match can complete automatically
+
+==================================================
+AUTOMATED AI MATCH SIMULATION
+==================================================
+
+Add a useful ability to run a match with:
+
+8 BOTS
+0 HUMAN
+
+at accelerated speed/headless or minimally rendered where practical.
+
+The goal is basic balance observation.
+
+Report after match:
+
+- final leaderboard
+- score
+- systems controlled
+- ships built
+- ships destroyed
+- battles
+- resources
+- strategic bonuses
+- Guardian killer
+- Leviathan killer
+- recovery counts
+
+This does not need the final production simulator architecture.
+
+It is a local balancing tool.
+
+==================================================
+MANUAL ACCEPTANCE TEST
+==================================================
+
+Before declaring this task complete, manually play/test enough of the game to verify the intended flow.
+
+The game should allow:
+
+OPENING
+1. Start match.
+2. See seven opponents.
+3. Expand to nearby system.
+4. Mine.
+5. Build ships.
+6. Fight pirates.
+
+MIDGAME
+7. Encounter enemy borders.
+8. Capture strategic bonus.
+9. Fight another player.
+10. Retreat from a bad fight.
+11. Defend owned territory.
+12. Watch other commanders fight.
+
+OBJECTIVES
+13. See Guardian.
+14. Attempt/observe Guardian fight.
+15. See cosmic entity appear.
+16. Observe it move/threaten systems.
+17. Fight or contest it.
+
+ENDGAME
+18. See standings matter.
+19. Experience Core/endgame score pressure.
+20. See domination warning if applicable.
+21. Reach match end.
+22. View final leaderboard/statistics.
+23. Start another match with different seed.
+
+The game should NOT require developer intervention to complete a normal match.
+
+==================================================
+GAME FEEL ACCEPTANCE
+==================================================
+
+This is the most important non-technical requirement.
+
+After implementation, assess:
+
+Does losing a system feel meaningful?
+
+Does capturing a system feel satisfying?
+
+Do strategic bonuses change decisions?
+
+Are pirates tempting without being mandatory?
+
+Does the Guardian create conflict?
+
+Does the cosmic entity create a memorable moment?
+
+Do bots create pressure?
+
+Does the map remain understandable during multiple battles?
+
+Is there enough downtime to think?
+
+Is there too much downtime?
+
+Does the player regularly have a meaningful decision?
+
+Does the match build toward a climax?
+
+Would someone want to immediately play another match?
+
+Document your observations honestly.
+
+==================================================
+DO NOT IMPLEMENT YET
+==================================================
+
+Still explicitly out of scope:
+
+- Supabase
+- real multiplayer
+- account system
+- Google login
+- production persistence
+- backend server
+- matchmaking
+- real network chat
+- payment
+- ads
+- formal alliances
+- guilds
+- permanent progression
+- research tree
+- deep diplomacy
+- persistent Campaign mode
+- mobile-native version
+- full Battle Lab V2 integration unless trivial and clearly beneficial
+
+Do NOT expand scope into these.
+
+==================================================
+DOCUMENTATION
+==================================================
+
+Update README.
+
+Create/update:
+
+docs/QUICK_CONQUEST_PROTOTYPE.md
+
+Document:
+
+- current game rules
+- match structure
+- resources
+- scoring
+- systems
+- pirates
+- strategic bonuses
+- Guardian
+- cosmic entity
+- bot personalities
+- combat
+- recovery
+- victory conditions
+- dev controls
+- known prototype shortcuts
+
+Update:
+
+docs/ASSET_PROVENANCE.md
+
+for all reused/new assets.
+
+==================================================
+CODE QUALITY
+==================================================
+
+Keep code understandable and modular enough to continue development.
+
+But again:
+
+DO NOT over-engineer production architecture.
+
+Prefer:
+
+working clear local game systems
+
+over:
+
+five layers of abstractions for hypothetical future servers.
+
+The point of this phase is GAMEPLAY VALIDATION.
+
+==================================================
+QUALITY GATES
+==================================================
+
+Before finishing:
+
+- npm ci succeeds
+- npm run dev works
+- typecheck passes
+- lint passes
+- tests pass
+- production build passes
+- normal local match can finish
+- accelerated bot-only match can finish
+- no runtime dependency on sibling repos
+- no Supabase added
+- no secrets
+- reference repositories unchanged
+- Space Wars changes committed
+- pushed to main
+- working tree clean
+
+==================================================
+FINAL RESPONSE
+==================================================
+
+When finished, STOP.
+
+Report:
+
+1. Summary of everything implemented.
+2. Exact normal match rules.
+3. Galaxy size and structure.
+4. Star/system redesign details.
+5. New star assets created.
+6. Other new original assets created.
+7. Existing Space Explorer assets reused.
+8. Pirate implementation.
+9. Strategic systems and bonuses.
+10. Guardian implementation.
+11. Cosmic entity implementation.
+12. Combat system.
+13. Battle commands.
+14. AI personalities and decision logic.
+15. Economy/pacing.
+16. Dominion Score formula.
+17. Domination win condition.
+18. Comeback mechanic.
+19. Chat implementation.
+20. Global event system.
+21. Endgame system.
+22. Match conclusion/statistics.
+23. DEV controls.
+24. Bot-only simulation results.
+25. Test/typecheck/lint/build results.
+26. Performance observations.
+27. Your honest gameplay observations from testing.
+28. Most obvious balance problems.
+29. Most obvious visual problems.
+30. Features you deliberately postponed.
+31. Commit SHA.
+32. Confirmation reference repositories were unchanged.
+33. Confirmation Space Wars working tree is clean.
+
+DO NOT begin backend/multiplayer implementation after this.
+
+Wait for owner review.

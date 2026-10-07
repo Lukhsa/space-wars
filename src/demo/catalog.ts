@@ -1,3 +1,4 @@
+import { BALANCE } from "./balance";
 import type { Civilization, ShipClass } from "./types";
 export const asset = (name: string) => `/assets/${name}`;
 export const civilizations: Civilization[] = [
@@ -78,44 +79,17 @@ export const shipClasses: ShipClass[] = [
   "Cruiser",
   "Dreadnought",
 ];
-export const ships: Record<
-  ShipClass,
-  {
-    art: string;
-    seconds: number;
-    credits: number;
-    alloy: number;
-    power: number;
-  }
-> = {
-  Frigate: {
-    art: "war2_human_frigate.webp",
-    seconds: 10,
-    credits: 320,
-    alloy: 180,
-    power: 240,
-  },
-  Destroyer: {
-    art: "war2_engine_burner_overburn_destroyer.webp",
-    seconds: 20,
-    credits: 720,
-    alloy: 420,
-    power: 580,
-  },
-  Cruiser: {
-    art: "war2_human_cruiser.webp",
-    seconds: 40,
-    credits: 1500,
-    alloy: 900,
-    power: 1250,
-  },
-  Dreadnought: {
-    art: "war2_human_dreadnought.webp",
-    seconds: 60,
-    credits: 2800,
-    alloy: 1700,
-    power: 2400,
-  },
-};
+const shipArt = [
+  "war2_human_frigate.webp",
+  "war2_engine_burner_overburn_destroyer.webp",
+  "war2_human_cruiser.webp",
+  "war2_human_dreadnought.webp",
+];
+export const ships = Object.fromEntries(
+  shipClasses.map((kind, i) => [
+    kind,
+    { art: shipArt[i], ...BALANCE.ships[i] },
+  ]),
+) as Record<ShipClass, (typeof BALANCE.ships)[number] & { art: string }>;
 export const WORLD = { width: 3200, height: 2300 };
 export const HOME = 0;

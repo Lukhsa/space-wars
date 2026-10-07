@@ -8,7 +8,6 @@ import {
   CircleDot,
   CircleHelp,
   Coins,
-  Compass,
   Crosshair,
   Flag,
   FlaskConical,
@@ -34,16 +33,30 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { BALANCE, STAR_NAMES } from "./demo/balance";
+import { strengthEstimate, syncPlayer, incomePerMinute } from "./demo/model";
+import { routeFor, fuelCost } from "./demo/commands";
+import {
+  MatchHUD,
+  SystemDetails,
+  FleetOrders,
+  BattleTray,
+  CommandFeed,
+  FleetFormation,
+  DevExtras,
+  MatchResult,
+  ShipQuantity,
+  shipRole,
+} from "./components/QuickConquest";
 import GalaxyMap from "./components/GalaxyMap";
 import {
   asset,
   civilizations,
   planets,
-  planetTypes,
   shipClasses,
   ships,
 } from "./demo/catalog";
-import { generateGalaxy, routeBetween } from "./demo/galaxy";
+import { generateGalaxy } from "./demo/galaxy";
 import {
   advanceDemo,
   buildShip,
@@ -202,7 +215,9 @@ export default function App() {
   const [state, setState] = useState(() => generateGalaxy("ORION-7742"));
   const [selected, setSelected] = useState(0),
     [asteroid, setAsteroid] = useState(false),
-    [selectedFleet, setSelectedFleet] = useState<number | null>(0);
+    [selectedFleet, setSelectedFleet] = useState<number | null>(
+      state.fleets[0].id,
+    );
   const [filter, setFilter] = useState<Filter>("All"),
     [focus, setFocus] = useState<{ id: number; nonce: number; point?: Point }>({
       id: 0,
@@ -223,6 +238,9 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null),
     [eventFilter, setEventFilter] = useState<"all" | "mine">("all"),
     [search, setSearch] = useState("");
+  const [matchDuration, setMatchDuration] = useState<number>(BALANCE.duration),
+    [allBots, setAllBots] = useState(false),
+    [quantity, setQuantity] = useState(1);
   const [reportId, setReportId] = useState<number | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -244,15 +262,10 @@ export default function App() {
     const timer = setTimeout(() => setToast(null), 4500);
     return () => clearTimeout(timer);
   }, [toast]);
-  const latestReport = state.reports[0];
+  const latestAlert = state.events.find((e) => e.priority);
   useEffect(() => {
-    if (latestReport)
-      setToast(
-        latestReport.victory
-          ? `${stateRef.current.systems[latestReport.system].name} secured. Your frontier expands.`
-          : "Assault repelled. Your fleet is withdrawing.",
-      );
-  }, [latestReport?.id]);
+    if (latestAlert) setToast(latestAlert.title + " — " + latestAlert.detail);
+  }, [latestAlert?.id]);
   const s = state.systems[selected],
     owner = s.owner === null ? null : state.commanders[s.owner],
     civ = owner ? civilizations[owner.civilization] : null;
@@ -264,14 +277,16 @@ export default function App() {
         ? "NEUTRAL FRONTIER"
         : "RIVAL TERRITORY";
   const playerFleets = state.fleets.filter((f) => f.owner === 0),
-    available = playerFleets.filter((f) => !moving(f));
+    available = playerFleets.filter(
+      (f) => !moving(f) && f.status !== "Battle" && f.retreatAt === null,
+    );
   const currentFleet = state.fleets.find((f) => f.id === selectedFleet);
   const selectedOrderFleet = order
     ? state.fleets.find((f) => f.id === order.fleet)
     : undefined;
   const preview =
     order && selectedOrderFleet
-      ? routeBetween(state, selectedOrderFleet.system, order.target)
+      ? routeFor(state, selectedOrderFleet, order.target)
       : [];
   const ownedCount = state.systems.filter((s) => s.owner === 0).length;
   const inspect = useCallback((id: number, belt = false) => {
@@ -313,18 +328,23 @@ export default function App() {
       setToast(error);
       return false;
     }
+    syncPlayer(draft);
     stateRef.current = draft;
     setState(draft);
     if (success) setToast(success);
     return true;
   };
   const reset = (seed: string) => {
-    const next = generateGalaxy(seed.trim() || "ORION-7742");
+    const next = generateGalaxy(
+      seed.trim() || "ORION-7742",
+      matchDuration,
+      allBots,
+    );
     setState(next);
     stateRef.current = next;
     setSeedInput(next.seed);
     setSelected(0);
-    setSelectedFleet(0);
+    setSelectedFleet(next.fleets[0].id);
     setAsteroid(false);
     setOrder(null);
     setOverlay(null);
@@ -335,7 +355,10 @@ export default function App() {
     setToast("A fresh frontier awaits.");
   };
   const commission = (kind: ShipClass) =>
-    mutate((d) => buildShip(d, kind), `${kind} added to the shipyard.`);
+    mutate(
+      (d) => buildShip(d, kind, 0, quantity),
+      `${kind} added to the shipyard.`,
+    );
   const results = search.trim()
     ? state.systems
         .filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
@@ -359,7 +382,7 @@ export default function App() {
           <HumanEmblem />
           <div>
             SPACE<span>WARS</span>
-            <small>COMMAND THE FRONTIER</small>
+            <small>QUICK CONQUEST</small>
           </div>
         </a>
         <nav className="main-nav" aria-label="Main navigation">
@@ -396,7 +419,7 @@ export default function App() {
                 {format(state.resources.credits)}
               </strong>
             </span>
-            <em>+48/m</em>
+            <em>+{format(incomePerMinute(state, 0).credits)}/m</em>
           </div>
           <div>
             <Boxes className="blue" size={18} />
@@ -427,7 +450,10 @@ export default function App() {
         <div className="profile">
           <HumanEmblem />
           <span>
-            Cmdr. Vale<small>HUMAN COMMANDER</small>
+            Cmdr. Vale
+            <small>
+              {state.commanders[0].bot ? "AI OBSERVER MODE" : "HUMAN COMMANDER"}
+            </small>
           </span>
         </div>
       </header>
@@ -441,7 +467,7 @@ export default function App() {
         <div>
           <span>{ownedCount} systems controlled</span>
           <i />
-          <span>32 commanders</span>
+          <span>8 commanders · FFA</span>
           <button
             className="icon-button"
             title="Help and controls"
@@ -484,7 +510,7 @@ export default function App() {
             <p>
               {asteroid
                 ? "Asteroid field · High-yield deposits"
-                : `${planetTypes[s.planet]} · Orion Expanse`}
+                : `${STAR_NAMES[s.star]} · ${s.region}`}
             </p>
           </div>
           <div className={`planet-hero ${asteroid ? "asteroid-hero" : ""}`}>
@@ -494,9 +520,13 @@ export default function App() {
             <img
               key={`${selected}-${asteroid}`}
               src={asset(
-                asteroid ? "asteroid_large_01.webp" : planets[s.planet],
+                asteroid
+                  ? "asteroid_large_01.webp"
+                  : `original/star-${s.star}.svg`,
               )}
-              alt={asteroid ? `${s.name} asteroid field` : `${s.name} planet`}
+              alt={
+                asteroid ? `${s.name} asteroid field` : `${s.name} star system`
+              }
             />
             <span className="hero-coordinate">
               {Math.round(s.x / 10)}° N <span>·</span> {Math.round(s.y / 10)}° E
@@ -550,7 +580,7 @@ export default function App() {
                       +{format(s.richness)} <span>Alloy</span>
                     </strong>
                   </div>
-                  <span>18s</span>
+                  <span>{BALANCE.miningSeconds}s</span>
                 </div>
               </>
             ) : (
@@ -559,11 +589,11 @@ export default function App() {
                   <div>
                     <small>
                       <Users size={11} />
-                      POPULATION
+                      PLANETS
                     </small>
                     <strong>
-                      {s.population}
-                      <span> B</span>
+                      {s.planets.length}
+                      <span> worlds</span>
                     </strong>
                   </div>
                   <div>
@@ -572,8 +602,11 @@ export default function App() {
                       DEFENSE
                     </small>
                     <strong>
-                      {!own && !s.scouted ? "≈ " : ""}
-                      {format(s.defense)}
+                      {s.capital
+                        ? "Protected"
+                        : strengthEstimate(state, 0, selected)
+                          ? `≈ ${format(strengthEstimate(state, 0, selected)![1])}`
+                          : "Unknown"}
                     </strong>
                   </div>
                 </div>
@@ -644,10 +677,15 @@ export default function App() {
               ) : (
                 <button
                   className={`primary-button ${!neutral ? "attack-button" : ""}`}
+                  disabled={s.capital}
                   onClick={() => openOrder("attack")}
                 >
                   <Flag size={15} />
-                  {neutral ? "Claim system" : "Attack system"}
+                  {s.capital
+                    ? "Protected home"
+                    : neutral
+                      ? "Claim system"
+                      : "Attack system"}
                   <ArrowRight size={14} />
                 </button>
               )}
@@ -655,7 +693,7 @@ export default function App() {
                 {asteroid ? (
                   <button onClick={() => setAsteroid(false)}>
                     <Globe2 size={13} />
-                    View planet
+                    View system
                   </button>
                 ) : (
                   <button
@@ -684,6 +722,7 @@ export default function App() {
                 )}
               </div>
             </div>
+            <SystemDetails state={state} selected={selected} />
             <div className="inspector-note">
               <Radio size={12} />
               {own
@@ -716,6 +755,7 @@ export default function App() {
           </div>
         </aside>
         <section className="map-column">
+          <MatchHUD state={state} onFocus={focusOn} />
           <div className="map-header">
             <div className="map-title">
               <span className="eyebrow">STRATEGIC VIEW</span>
@@ -802,6 +842,10 @@ export default function App() {
             preview={preview}
             paused={paused}
           />
+          <BattleTray state={state} onFocus={focusOn} />
+          {currentFleet?.owner === 0 && (
+            <FleetOrders state={state} fleet={currentFleet} mutate={mutate} />
+          )}
           {currentFleet?.owner === 0 && (
             <div className="selected-fleet-bar">
               <div>
@@ -819,7 +863,11 @@ export default function App() {
                 {format(currentFleet.power)} <small>PWR</small>
               </span>
               <button
-                disabled={moving(currentFleet)}
+                disabled={
+                  moving(currentFleet) ||
+                  currentFleet.status === "Battle" ||
+                  currentFleet.retreatAt !== null
+                }
                 onClick={() =>
                   openOrder(
                     asteroid ? "mine" : s.owner !== 0 ? "attack" : "move",
@@ -841,7 +889,7 @@ export default function App() {
                 <Navigation size={14} />
                 YOUR FLEETS
               </span>
-              <span className="count-badge">03</span>
+              <span className="count-badge">{playerFleets.length}</span>
             </div>
             <div className="fleet-list">
               {playerFleets.map((f) => (
@@ -929,7 +977,7 @@ export default function App() {
                 <Hammer size={14} />
                 SHIP PRODUCTION
               </span>
-              <span className="tiny-number">{state.queue.length}/2</span>
+              <span className="tiny-number">{state.queue.length}/10</span>
             </div>
             <div className="shipyard-location">
               <span className="live-dot" />
@@ -937,7 +985,7 @@ export default function App() {
             </div>
             <div className="queue-list">
               {state.queue.length ? (
-                state.queue.map((job) => (
+                state.queue.map((job, index) => (
                   <div key={job.id} className="queue-item">
                     <img src={asset(ships[job.kind].art)} alt="" />
                     <div>
@@ -945,7 +993,11 @@ export default function App() {
                         {job.kind}
                         <small>{time(job.duration - job.elapsed)}</small>
                       </strong>
-                      <span>Assembly in progress</span>
+                      <span>
+                        {index < 2
+                          ? "Assembly in progress"
+                          : "Waiting for berth"}
+                      </span>
                       <Progress
                         value={job.elapsed / job.duration}
                         tone="gold"
@@ -965,6 +1017,7 @@ export default function App() {
             </div>
             <button
               className="build-button"
+              aria-label="Build a ship"
               onClick={() => setOverlay("build")}
             >
               <Hammer size={14} />
@@ -978,28 +1031,7 @@ export default function App() {
               </strong>
             </div>
           </div>
-          <div className="frontier-brief">
-            <div>
-              <Compass size={16} />
-              <span className="eyebrow">FRONTIER OPPORTUNITY</span>
-            </div>
-            <strong>
-              {state.systems[2].owner === 0
-                ? "A new foothold"
-                : "Beyond the familiar"}
-            </strong>
-            <p>
-              {state.systems[2].owner === 0
-                ? "Nexus is under your command. Vesper lies further along the frontier."
-                : "Nexus lies just beyond your border. Send an expedition and make it yours."}
-            </p>
-            <button
-              onClick={() => focusOn(state.systems[2].owner === 0 ? 6 : 2)}
-            >
-              View system
-              <ArrowRight size={13} />
-            </button>
-          </div>
+          <CommandFeed state={state} mutate={mutate} onFocus={focusOn} />
         </aside>
       </main>
       <section className="event-log">
@@ -1068,7 +1100,8 @@ export default function App() {
         <span>
           ORION-{state.seed.replace("ORION-", "")}
           <i />
-          160 SYSTEMS<span className="footer-version">SPACE WARS / 0.1</span>
+          28 STAR SYSTEMS
+          <span className="footer-version">SPACE WARS / 0.2</span>
         </span>
       </footer>
 
@@ -1088,7 +1121,7 @@ export default function App() {
         <section className="dev-panel" aria-label="Developer controls">
           <div>
             <FlaskConical size={14} />
-            <strong>LOCAL DEMO CONTROLS</strong>
+            <strong>LOCAL MATCH · DEV</strong>
             <button
               aria-label="Close developer controls"
               onClick={() => setDev(false)}
@@ -1115,12 +1148,12 @@ export default function App() {
             </button>
             <button onClick={() => reset(state.seed)}>
               <RefreshCw size={13} />
-              Reset demo
+              Restart match
             </button>
           </div>
           <div className="speed-controls">
             <span>SIMULATION</span>
-            {[1, 2, 5].map((n) => (
+            {[1, 2, 5, 10].map((n) => (
               <button
                 key={n}
                 className={speed === n ? "active" : ""}
@@ -1130,6 +1163,14 @@ export default function App() {
               </button>
             ))}
           </div>
+          <DevExtras
+            state={state}
+            mutate={mutate}
+            duration={matchDuration}
+            setDuration={setMatchDuration}
+            allBots={allBots}
+            setAllBots={setAllBots}
+          />
           <p>
             Everything runs in this browser. Refreshing resets the world.
             Pausing freezes travel, production and rival activity.
@@ -1203,7 +1244,9 @@ export default function App() {
               </small>
               <strong>
                 {order.mission === "attack"
-                  ? `≈ ${format(state.systems[order.target].defense)}`
+                  ? (strengthEstimate(state, 0, order.target)
+                      ?.map(format)
+                      .join("–") ?? "Unknown")
                   : order.mission === "mine"
                     ? `+${format(state.systems[order.target].richness)}`
                     : preview.length - 1}
@@ -1214,7 +1257,7 @@ export default function App() {
               <strong>
                 {preview.length === 1
                   ? "00:00"
-                  : time(travelTime(state, preview))}
+                  : time(travelTime(state, preview, selectedOrderFleet))}
               </strong>
             </div>
           </div>
@@ -1228,9 +1271,9 @@ export default function App() {
             <CircleHelp size={14} />
             <span>
               {order.mission === "attack"
-                ? "A local simulated battle resolves on arrival. Victory transfers control and expands your territory."
+                ? "Combat resolves on the map. Clear hostile fleets, then hold for 20 seconds to capture. Intermediate hostiles intercept your route."
                 : order.mission === "mine"
-                  ? "Your fleet will extract Alloy for 18 seconds after arrival, then return to idle."
+                  ? "Secure the system, then extract Alloy and Fuel for 40 seconds. Your fleet returns to idle after one cycle."
                   : "Your fleet follows the connected travel lanes. Orders cannot change while underway."}
             </span>
           </div>
@@ -1260,7 +1303,8 @@ export default function App() {
                   ? "Deploy fleet"
                   : "Confirm orders"}
               <span>
-                {Math.max(0, preview.length - 1) * 20} <Fuel size={12} />
+                {fuelCost(state, selectedOrderFleet, preview)}{" "}
+                <Fuel size={12} />
               </span>
             </button>
           </div>
@@ -1276,13 +1320,14 @@ export default function App() {
             Build your presence on the frontier. Completed ships enter your
             homeworld reserve.
           </p>
+          <ShipQuantity quantity={quantity} setQuantity={setQuantity} />
           <div className="ship-catalog">
             {shipClasses.map((kind) => {
               const spec = ships[kind],
                 disabled =
-                  state.queue.length >= 2 ||
-                  state.resources.credits < spec.credits ||
-                  state.resources.alloy < spec.alloy;
+                  state.queue.length + quantity > BALANCE.queueLimit ||
+                  state.resources.credits < spec.credits * quantity ||
+                  state.resources.alloy < spec.alloy * quantity;
               return (
                 <div key={kind} className="ship-option">
                   <div className="ship-option-art">
@@ -1290,6 +1335,7 @@ export default function App() {
                   </div>
                   <div>
                     <h3>{kind}</h3>
+                    <small>{shipRole(kind)}</small>
                     <span>
                       {format(spec.power)} POWER <i /> {spec.seconds}s BUILD
                     </span>
@@ -1301,7 +1347,9 @@ export default function App() {
                     </p>
                   </div>
                   <button disabled={disabled} onClick={() => commission(kind)}>
-                    {state.queue.length >= 2 ? "Full" : "Build"}
+                    {state.queue.length + quantity > BALANCE.queueLimit
+                      ? "Full"
+                      : "Build"}
                     <Hammer size={12} />
                   </button>
                 </div>
@@ -1310,7 +1358,7 @@ export default function App() {
           </div>
           <div className="modal-bottom-note">
             <Hammer size={13} />
-            {state.queue.length} of 2 construction berths occupied{" "}
+            {state.queue.length} / 10 queue slots used · 2 active berths{" "}
             <span>
               {state.reserve.reduce((a, b) => a + b, 0)} ships in reserve
             </span>
@@ -1327,6 +1375,7 @@ export default function App() {
             Select a fleet to plot its next mission. Reserve ships can join a
             fleet stationed at Nova Prime.
           </p>
+          <FleetFormation state={state} mutate={mutate} />
           {playerFleets.map((f) => (
             <div className="registry-row" key={f.id}>
               <Navigation size={22} />
@@ -1382,7 +1431,8 @@ export default function App() {
           onClose={() => setOverlay(null)}
         >
           <p className="modal-intro">
-            Eight civilizations. Thirty-two commanders. One shifting frontier.
+            Eight civilizations. One human and seven local AI commanders. No
+            alliances.
           </p>
           <div className="civilization-grid">
             {civilizations.map((c, i) => (
@@ -1465,15 +1515,16 @@ export default function App() {
               <span>
                 <strong>Give your fleet a destination</strong>Select a fleet,
                 then a system. Set course, review the route and confirm. Travel
-                takes 15–60 seconds.
+                takes 20–50 seconds per nearby hop.
               </span>
             </p>
             <p>
               <Flag />
               <span>
-                <strong>Leave your mark</strong>Claim Nexus, extract Alloy from
-                Pallas Belt, or commission ships. Captures redraw your
-                territory.
+                <strong>Leave your mark</strong>Claim Nexus or Aegis, mine your
+                home belt, then contest strategic systems. Territory earns
+                Dominion. Highest score at 40 minutes wins; hold 12 of 20
+                external systems for 75 seconds to win early.
               </span>
             </p>
             <p>
@@ -1487,12 +1538,19 @@ export default function App() {
           </div>
         </Modal>
       )}
+      {state.status === "finished" && (
+        <MatchResult
+          state={state}
+          onRestart={() => reset(state.seed)}
+          onNewSeed={() =>
+            reset(`ORION-${Date.now().toString(36).toUpperCase()}`)
+          }
+        />
+      )}
       {activeReport && (
         <Modal
           eyebrow="AFTER-ACTION REPORT"
-          title={
-            activeReport.victory ? "Territory secured" : "Fleet withdrawal"
-          }
+          title={activeReport.victory ? "Battle won" : "Battle lost"}
           onClose={() => setReportId(null)}
         >
           <div
@@ -1502,8 +1560,8 @@ export default function App() {
             <h3>{state.systems[activeReport.system].name}</h3>
             <p>
               {activeReport.victory
-                ? "Your colors now mark this corner of the galaxy."
-                : "Your fleet lives to fight another day."}
+                ? "Your fleet holds the field. Uncontested occupation secures territory."
+                : "Check your surviving forces and rebuild at Nova Prime."}
             </p>
           </div>
           <div className="order-stats">

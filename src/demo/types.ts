@@ -1,5 +1,26 @@
 export type Point = { x: number; y: number };
-export type Mission = "move" | "attack" | "mine" | "scout";
+import type { Strategic } from "./balance";
+export type Mission = "move" | "attack" | "mine" | "scout" | "defend";
+export type Stance =
+  "Balanced" | "Aggressive" | "Defensive" | "Focus capitals" | "Focus escorts";
+export type Personality =
+  "Expansionist" | "Aggressor" | "Industrialist" | "Turtle" | "Opportunist";
+export type Resources = { credits: number; alloy: number; fuel: number };
+export type ShipUnit = { kind: number; hp: number };
+export interface Stats {
+  peak: number;
+  battles: number;
+  wins: number;
+  destroyed: number;
+  pirates: number;
+  guardian: number;
+  leviathan: number;
+  mined: number;
+  built: number;
+  recoveries: number;
+  captures: number;
+  orders: number;
+}
 export type ShipClass = "Frigate" | "Destroyer" | "Cruiser" | "Dreadnought";
 export type Filter =
   "All" | "Owned" | "Neutral" | "Hostile" | "Fleets" | "Asteroids";
@@ -15,6 +36,23 @@ export interface Commander {
   name: string;
   civilization: number;
   center: Point;
+  bot: boolean;
+  personality: Personality;
+  resources: Resources;
+  reserve: number[];
+  queue: BuildJob[];
+  score: number;
+  stats: Stats;
+  nextDecision: number;
+  goal: string;
+  target: number | null;
+  reasoning: string;
+  buildPlan?: ShipClass;
+  recoveryUntil: number;
+  recoveryCooldown: number;
+  hadExternal: boolean;
+  buffs: { kind: "guardian" | "leviathan"; until: number }[];
+  intel: Record<number, number>;
 }
 export interface System extends Point {
   id: number;
@@ -29,6 +67,12 @@ export interface System extends Point {
   scouted: boolean;
   capturedAt: number;
   output: [number, number, number];
+  star: number;
+  planets: number[];
+  belts: number;
+  region: "Home" | "Frontier" | "Mid" | "Core";
+  strategic?: Strategic;
+  capture: { owner: number; elapsed: number } | null;
 }
 export interface Lane {
   a: number;
@@ -42,12 +86,28 @@ export interface Fleet {
   power: number;
   ships: number[];
   system: number;
-  status: "Idle" | "Defending" | "Moving" | "Attacking" | "Mining" | "Scouting";
+  status:
+    | "Idle"
+    | "Defending"
+    | "Moving"
+    | "Attacking"
+    | "Mining"
+    | "Scouting"
+    | "Battle"
+    | "Retreating"
+    | "Capturing";
   route: number[];
   elapsed: number;
   duration: number;
   mission: Mission;
   miningElapsed: number;
+  units: ShipUnit[];
+  stance: Stance;
+  previous: number;
+  retreatAt: number | null;
+  retreatFuel: number;
+  lastOrder: number;
+  neutral?: "pirates" | "guardian" | "leviathan";
 }
 export interface LogEvent {
   id: number;
@@ -57,6 +117,7 @@ export interface LogEvent {
   detail: string;
   system: number;
   player: boolean;
+  priority?: boolean;
 }
 export interface BuildJob {
   id: number;
@@ -87,4 +148,38 @@ export interface DemoState {
   nextRival: number;
   serial: number;
   reports: Report[];
+  duration: number;
+  accumulator: number;
+  battles: Battle[];
+  completedBattles: number;
+  status: "playing" | "finished";
+  winner: number | null;
+  endReason: "timer" | "domination" | null;
+  domination: { owner: number; elapsed: number } | null;
+  chat: { id: number; owner: number; text: string; time: number }[];
+  nextChat: number;
+  objectives: { guardian: Objective; leviathan: Objective };
+  globalEvents: string[];
+  surgeUntil: number;
+  nextRaid: number;
+  history: { time: number; scores: number[]; territory: number[] }[];
+  devReveal: boolean;
+}
+export interface Objective {
+  active: boolean;
+  spawned: boolean;
+  fleet: number | null;
+  system: number;
+  killer: number | null;
+  nextMove: number;
+}
+export interface Battle {
+  id: number;
+  system: number;
+  owners: number[];
+  start: number;
+  initial: number[];
+  casualties: number[];
+  power: number[];
+  participants: number[];
 }

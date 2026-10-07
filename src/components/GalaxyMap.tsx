@@ -8,7 +8,16 @@ import {
   Navigation,
   ScanLine,
 } from "lucide-react";
-import { asset, civilizations, planets, WORLD } from "../demo/catalog";
+import {
+  asset,
+  civilizations,
+  planets,
+  ships,
+  shipClasses,
+  WORLD,
+} from "../demo/catalog";
+import { BALANCE } from "../demo/balance";
+import { visibleSystems } from "../demo/model";
 import { randomFrom } from "../demo/galaxy";
 import { fleetPosition, moving } from "../demo/simulation";
 import { createCells, territoryPaths } from "../demo/territory";
@@ -81,7 +90,7 @@ export default function GalaxyMap({
     ),
     [stars],
   );
-  const detail = camera.z > 0.95 ? "close" : camera.z > 0.43 ? "medium" : "far";
+  const detail = camera.z > 0.72 ? "close" : camera.z > 0.43 ? "medium" : "far";
   const transformFor = (c: Camera) =>
     `translate(${size.width / 2} ${size.height / 2}) scale(${c.z}) translate(${-c.x} ${-c.y})`;
   const paintCamera = (next: Camera, settled = false) => {
@@ -118,7 +127,7 @@ export default function GalaxyMap({
     target.current = {
       x: Math.max(-150, Math.min(WORLD.width + 150, next.x)),
       y: Math.max(-150, Math.min(WORLD.height + 150, next.y)),
-      z: Math.max(0.22, Math.min(2.5, next.z)),
+      z: Math.max(0.18, Math.min(2.5, next.z)),
     };
     animate();
   };
@@ -157,13 +166,22 @@ export default function GalaxyMap({
   });
   useEffect(() => {
     const s = focus.point ?? state.systems[focus.id];
-    if (s) aim({ x: s.x, y: s.y, z: Math.max(0.8, cameraRef.current.z) });
+    if (s)
+      aim({
+        x: s.x,
+        y: s.y,
+        z: focus.id === 0 ? 0.65 : Math.max(0.82, cameraRef.current.z),
+      });
   }, [focus.nonce, state.seed]);
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
   const color = (owner: number | null) =>
     owner === null
       ? "#728596"
-      : civilizations[state.commanders[owner].civilization].color;
+      : owner < 0
+        ? owner === -3
+          ? "#b599db"
+          : "#d6ad73"
+        : civilizations[state.commanders[owner].civilization].color;
   const emphasized = (id: number) => {
     const s = state.systems[id];
     return (
@@ -175,6 +193,7 @@ export default function GalaxyMap({
       (filter === "Fleets" && state.fleets.some((f) => f.system === id))
     );
   };
+  const visible = visibleSystems(state, 0);
   const selectedRoutes = state.fleets.filter(
     (f) => moving(f) && (f.id === selectedFleet || f.owner === 0),
   );
@@ -190,7 +209,6 @@ export default function GalaxyMap({
       state.systems.map((s) => {
         const active = s.id === selected,
           hovered = hover === s.id,
-          important = s.capital || s.owner === 0 || active,
           r = s.id === 0 ? 26 : s.capital ? 20 : 14;
         const visible =
           s.x > camera.x - size.width / camera.z / 2 - 100 &&
@@ -198,10 +216,7 @@ export default function GalaxyMap({
           s.y > camera.y - size.height / camera.z / 2 - 100 &&
           s.y < camera.y + size.height / camera.z / 2 + 100;
         if (!visible) return null;
-        const labels =
-          detail === "close" ||
-          (detail === "medium" && (important || s.id < 8 || s.id % 3 === 0)) ||
-          active;
+        const labels = true;
         return (
           <g
             key={s.id}
@@ -270,82 +285,106 @@ export default function GalaxyMap({
               strokeWidth={s.capital ? 1.4 : 1}
               strokeOpacity=".7"
             />
-            {detail !== "far" || important ? (
-              <image
-                href={asset(planets[s.planet])}
-                x={-r}
-                y={-r}
-                width={r * 2}
-                height={r * 2}
-                className="planet-map"
-              />
-            ) : (
-              <circle r="5" fill={color(s.owner)} />
-            )}
+
+            <image
+              href={asset(`original/star-${s.star}.svg`)}
+              x={-r * 1.7}
+              y={-r * 1.7}
+              width={r * 3.4}
+              height={r * 3.4}
+              className="planet-map"
+            />
+
             {s.capital && (
               <path
                 d={`M-4 -${r + 10}l4-4 4 4-4 4z`}
                 fill={s.owner === 0 ? "#e0c08c" : color(s.owner)}
               />
             )}
-            {s.asteroid && detail !== "far" && (
-              <g
-                role="button"
-                aria-label={`${s.name} asteroid field`}
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!drag.current.moved) onSelect(s.id, true);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.stopPropagation();
-                    onSelect(s.id, true);
-                  }
-                }}
-              >
-                <ellipse
-                  cx="0"
-                  cy="0"
-                  rx={r + 26}
-                  ry={r + 10}
-                  transform="rotate(-28)"
-                  fill="none"
-                  stroke="#aaa796"
-                  strokeWidth="3"
-                  strokeDasharray="1 8"
-                  strokeOpacity=".28"
-                />
-                <image
-                  href={asset(
-                    s.id % 2
-                      ? "asteroid_medium_01.png"
-                      : "asteroid_small_01.png",
-                  )}
-                  x={r + 9}
-                  y="-14"
-                  width="22"
-                  height="22"
-                />
-                {detail === "close" && (
-                  <text x={r + 19} y="-21" className="asteroid-label">
-                    ALLOY
-                  </text>
+            {detail === "close" && (
+              <g className="system-interior">
+                {s.planets.map((planet, i) => {
+                  const a = i * 2.399 + s.id,
+                    orbit = 46 + i * 13;
+                  return (
+                    <g key={i}>
+                      <ellipse
+                        rx={orbit}
+                        ry={orbit * 0.72}
+                        fill="none"
+                        stroke={color(s.owner)}
+                        strokeOpacity=".12"
+                        strokeWidth=".7"
+                      />
+                      <image
+                        href={asset(planets[planet])}
+                        x={Math.cos(a) * orbit - 8}
+                        y={Math.sin(a) * orbit * 0.72 - 8}
+                        width={16 + i * 2}
+                        height={16 + i * 2}
+                      />
+                    </g>
+                  );
+                })}
+                {s.asteroid && (
+                  <g
+                    role="button"
+                    tabIndex={0}
+                    aria-label={s.name + " asteroid field"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(s.id, true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.stopPropagation();
+                        onSelect(s.id, true);
+                      }
+                    }}
+                  >
+                    <image
+                      href={asset(`original/belt-${s.id % 3}.svg`)}
+                      x="-93"
+                      y="-76"
+                      width="186"
+                      height="152"
+                    />
+                    <text x="65" y="-49" className="asteroid-label">
+                      ALLOY / FUEL
+                    </text>
+                  </g>
                 )}
               </g>
+            )}
+            {s.strategic && (
+              <image
+                href={asset(`original/objective-${s.strategic}.svg`)}
+                x="-48"
+                y="-42"
+                width="24"
+                height="24"
+              />
             )}
             {labels && (
               <>
                 <text
-                  y={r + 29}
+                  y={detail === "close" ? 100 : r + 29}
                   textAnchor="middle"
                   className={`system-label ${s.owner === 0 ? "owned-label" : ""}`}
+                  style={{
+                    fontSize:
+                      detail === "far"
+                        ? 9 / camera.z
+                        : detail === "medium"
+                          ? 10 / camera.z
+                          : 13,
+                  }}
                 >
                   {s.name}
                 </text>
                 {(active || s.id === 0 || detail === "close") && (
                   <text
-                    y={r + 44}
+                    y={detail === "close" ? 114 : r + 44}
                     textAnchor="middle"
                     className="system-subtitle"
                     fill={color(s.owner)}
@@ -395,7 +434,7 @@ export default function GalaxyMap({
         onKeyDown={(e) => {
           if (e.target !== e.currentTarget) return;
           if (e.key === "Home") {
-            aim({ ...state.systems[0], z: 0.82 });
+            aim({ ...state.systems[0], z: 0.65 });
             e.preventDefault();
           }
           if (
@@ -656,12 +695,84 @@ export default function GalaxyMap({
             />
           )}
           {systemNodes}
+          {state.battles.map((b) => (
+            <g
+              key={b.id}
+              transform={`translate(${state.systems[b.system].x} ${state.systems[b.system].y})`}
+              className="map-battle"
+              onClick={() => onSelect(b.system)}
+            >
+              <circle
+                r="52"
+                fill="none"
+                stroke="#e6a179"
+                strokeDasharray="6 7"
+              />
+              {detail !== "far" &&
+                b.owners.flatMap((owner, side) =>
+                  state.fleets
+                    .filter(
+                      (f) =>
+                        f.system === b.system &&
+                        f.owner === owner &&
+                        !moving(f),
+                    )
+                    .flatMap((f) => f.units)
+                    .slice(0, 3)
+                    .map((u, i) => (
+                      <image
+                        key={`${side}-${i}`}
+                        href={asset(ships[shipClasses[u.kind]].art)}
+                        x={side === 0 ? -47 : 23}
+                        y={-28 + i * 20}
+                        width="22"
+                        height="29"
+                        transform={side === 0 ? "rotate(22)" : "rotate(-22)"}
+                      />
+                    )),
+                )}
+              <path
+                d="M-35 -16 32 20M-24 24 29-28"
+                stroke="#f1bc80"
+                strokeWidth="2"
+              />
+              <text y="-60" textAnchor="middle">
+                BATTLE · {b.casualties.reduce((a, c) => a + c, 0)} LOST
+              </text>
+            </g>
+          ))}
+          {state.systems
+            .filter((x) => x.capture)
+            .map((x) => (
+              <g key={x.id} transform={`translate(${x.x} ${x.y})`}>
+                <circle
+                  r="47"
+                  fill="none"
+                  stroke="#acdade"
+                  strokeWidth="3"
+                  strokeDasharray={`${(x.capture!.elapsed / BALANCE.captureSeconds) * 295} 295`}
+                  transform="rotate(-90)"
+                />
+              </g>
+            ))}
           {state.fleets.map((f) => {
-            if (detail === "far" && f.owner !== 0) return null;
+            if (
+              f.owner !== 0 &&
+              !visible.has(f.system) &&
+              !state.devReveal &&
+              !f.neutral
+            )
+              return null;
             const p = fleetPosition(state, f),
               selectedF = f.id === selectedFleet,
               isMoving = moving(f),
-              offset = isMoving ? 0 : 32;
+              offset = isMoving
+                ? 0
+                : 48 +
+                  state.fleets.filter(
+                    (x) => x.system === f.system && !moving(x) && x.id < f.id,
+                  ).length *
+                    25;
             return (
               <g
                 key={f.id}
@@ -682,6 +793,19 @@ export default function GalaxyMap({
                 }}
               >
                 <circle r="16" fill="transparent" />
+                {f.neutral && (
+                  <image
+                    href={asset(
+                      f.neutral === "pirates"
+                        ? "war2_pirate_ragtooth.webp"
+                        : `original/${f.neutral}.svg`,
+                    )}
+                    x="-26"
+                    y="-26"
+                    width="52"
+                    height="52"
+                  />
+                )}
                 {selectedF && (
                   <circle
                     r="16"
@@ -713,11 +837,11 @@ export default function GalaxyMap({
                     fill="none"
                     stroke="#d1b878"
                     strokeWidth="1.6"
-                    strokeDasharray={`${(f.miningElapsed / 18) * 81} 81`}
+                    strokeDasharray={`${(f.miningElapsed / BALANCE.miningSeconds) * 81} 81`}
                     transform="rotate(-90)"
                   />
                 )}
-                {(selectedF || (detail === "close" && f.owner === 0)) && (
+                {selectedF && (
                   <text x="19" y="-10" className="fleet-label">
                     {f.name}
                   </text>

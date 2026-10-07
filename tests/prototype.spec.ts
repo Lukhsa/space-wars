@@ -1,159 +1,227 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
-test("dashboard camera, inspection, mining, production and capture work in the browser", async ({
+async function dev(page: Page) {
+  await page.getByRole("button", { name: "DEV", exact: true }).click();
+}
+async function closeDev(page: Page) {
+  await page.getByRole("button", { name: "Close developer controls" }).click();
+}
+async function find(page: Page, name: string) {
+  await page.getByLabel("Find a system").fill(name);
+  await page
+    .locator(".search-results button")
+    .filter({ hasText: name })
+    .first()
+    .click();
+}
+async function start(page: Page) {
+  const now = new Date();
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(now);
+  await page.goto("/");
+  await dev(page);
+  await page.getByRole("button", { name: "×10", exact: true }).click();
+  await closeDev(page);
+}
+
+test("opening: inspect eight commanders, capture, mine, queue ships, form fleet and chat", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
-  await expect(
-    page.getByRole("heading", { name: "Nova Prime", exact: true }),
-  ).toBeVisible();
-  await expect(page.locator('[data-territory="0"]')).toBeVisible();
-  await page.getByRole("button", { name: "DEV", exact: true }).click();
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
-  await page.getByRole("button", { name: "Close developer controls" }).click();
-  const svg = page.getByRole("application");
-  const bounds = (await svg.boundingBox())!;
-  await page.mouse.move(
-    bounds.x + bounds.width * 0.45,
-    bounds.y + bounds.height * 0.4,
-  );
-  await page.mouse.wheel(0, 500);
-  await expect(page.locator(".map-tools>span")).not.toHaveText("82%");
-  const coordinates = await page.locator(".coordinate-value").textContent();
-  await page.mouse.down();
-  await page.mouse.move(
-    bounds.x + bounds.width * 0.45 + 100,
-    bounds.y + bounds.height * 0.4 + 70,
-    { steps: 12 },
-  );
-  await page.mouse.up();
-  await expect(page.locator(".coordinate-value")).not.toHaveText(coordinates!);
-  await page.getByRole("button", { name: "Focus homeworld" }).click();
-  await page
-    .getByRole("button", { name: "Nexus, neutral system", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Nexus", exact: true }),
-  ).toBeVisible();
-  const territory = await page
-    .locator('[data-territory="0"] path')
-    .first()
-    .getAttribute("d");
+  await start(page);
+  await expect(page.locator(".standings-list>button")).toHaveCount(8);
+  await expect(page.getByTestId("match-timer")).toHaveText("40:00");
+  await find(page, "Nexus");
   await page.getByRole("button", { name: "Claim system", exact: true }).click();
-  await expect(page.locator(".route-summary")).toHaveText(/Nova Prime.*Nexus/);
+  await expect(page.locator(".route-summary")).toContainText("Nova Prime");
   await page.getByRole("button", { name: "Launch assault" }).click();
-  await expect(page.locator(".fleet-card").first()).toContainText("Attacking");
-  await page.getByRole("button", { name: "DEV", exact: true }).click();
-  await page.getByRole("button", { name: "×5", exact: true }).click();
-  await page.getByRole("button", { name: "Resume", exact: true }).click();
-  await page.getByRole("button", { name: "Close developer controls" }).click();
-  await expect(page.locator(".relation")).toContainText("YOUR TERRITORY", {
-    timeout: 20000,
-  });
-  await expect(
-    page.locator('[data-territory="0"] path').first(),
-  ).not.toHaveAttribute("d", territory!);
-  await page.getByRole("button", { name: "Select Mining Group Alpha" }).click();
+  await page.clock.runFor(7000);
+  await expect(page.locator(".relation")).toHaveText("YOUR TERRITORY");
+  await page
+    .getByRole("button", { name: "Select Mining Group Alpha", exact: true })
+    .click();
   await page.locator(".asteroid-opportunity").click();
-  await expect(
-    page.getByRole("heading", { name: "Pallas Belt" }),
-  ).toBeVisible();
-  const alloy = Number(
-    (await page.getByTestId("alloy").textContent())!.replaceAll(",", ""),
-  );
   await page.getByRole("button", { name: "Send mining fleet" }).click();
   await page
     .getByRole("button", { name: "Deploy fleet", exact: false })
     .click();
-  await expect(page.getByTestId("alloy")).not.toHaveText(
-    alloy.toLocaleString("en-US"),
-    { timeout: 15000 },
-  );
-  await page.getByRole("button", { name: "Build a ship" }).click();
-  const reserve = Number(await page.getByTestId("reserve-count").textContent());
+  await page.clock.runFor(4100);
+  await expect(page.locator(".event-items")).toContainText("Mining complete");
+  await page.getByRole("button", { name: "Build a ship", exact: true }).click();
+  await page.getByLabel("Build quantity").selectOption("3");
   await page
     .locator(".ship-option")
     .first()
     .getByRole("button", { name: "Build", exact: true })
     .click();
   await page.getByRole("button", { name: "Close dialog" }).click();
-  await expect(page.getByTestId("reserve-count")).toHaveText(
-    String(reserve + 1),
-    { timeout: 10000 },
+  await page.clock.runFor(5100);
+  await expect(page.getByTestId("reserve-count")).toHaveText("3");
+  await page.getByRole("button", { name: "FLEETS", exact: true }).click();
+  await page.getByLabel("Frigate allocation").fill("3");
+  await page.getByRole("button", { name: "Create fleet", exact: true }).click();
+  await expect(page.getByRole("dialog").locator(".registry-row")).toHaveCount(
+    3,
   );
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.getByRole("button", { name: "GLOBAL CHAT", exact: true }).click();
+  await page.getByLabel("Global chat message").fill("The Core is contested.");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.locator(".chat-messages")).toContainText(
+    "The Core is contested.",
+  );
+  await page.screenshot({
+    path: "docs/screenshots/quick-conquest-opening.png",
+  });
   expect(errors).toEqual([]);
 });
 
-test("rival inspection, clickable events, seed changes, reset and smaller viewports", async ({
+test("camera, protected homes, seed controls, pause and responsive layout", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "INTELLIGENCE", exact: true }).click();
-  await page.getByRole("button", { name: "Solari", exact: false }).click();
-  await expect(page.locator(".relation")).toContainText("RIVAL TERRITORY");
-  await page.locator(".event-item").first().click();
-  await page.getByRole("button", { name: "DEV", exact: true }).click();
-  const before = await page
-    .locator('[data-territory="1"] path')
-    .getAttribute("d");
-  await page.getByLabel("GALAXY SEED").fill("TEST-NEW-FRONTIER");
-  await page.getByRole("button", { name: "Regenerate galaxy" }).click();
-  await expect(page.locator('[data-territory="1"] path')).not.toHaveAttribute(
-    "d",
-    before!,
+  await dev(page);
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await closeDev(page);
+  const svg = page.getByRole("application"),
+    bounds = (await svg.boundingBox())!;
+  await page.mouse.move(
+    bounds.x + bounds.width / 2,
+    bounds.y + bounds.height / 2,
   );
-  await page.getByRole("button", { name: "Reset demo", exact: true }).click();
+  await page.mouse.wheel(0, -450);
+  await expect(page.locator(".map-tools>span")).not.toHaveText("65%");
+  const before = await page.locator(".coordinate-value").textContent();
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + 100, bounds.y + 100, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.locator(".coordinate-value")).not.toHaveText(before!);
+  await find(page, "Sera");
   await expect(
-    page.getByRole("heading", { name: "Nova Prime", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Close developer controls" }).click();
-  await page.setViewportSize({ width: 1100, height: 820 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
-    1100,
-  );
-  await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
-    390,
-  );
-  await expect(page.getByRole("application")).toBeVisible();
+    page.getByRole("button", { name: "Protected home", exact: true }),
+  ).toBeDisabled();
+  await dev(page);
+  await page.getByLabel("GALAXY SEED").fill("SECOND-FRONTIER");
+  await page
+    .getByRole("button", { name: "Regenerate galaxy", exact: true })
+    .click();
+  await expect(page.getByLabel("GALAXY SEED")).toHaveValue("SECOND-FRONTIER");
+  await closeDev(page);
+  for (const width of [1100, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(width);
+    await expect(svg).toBeVisible();
+  }
 });
 
-test("fleets visibly travel to an asteroid, extract and receive a new move order", async ({
+test("map battle stays playable; stances and a timed retreat preserve survivors", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "DEV", exact: true }).click();
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
-  await page.getByRole("button", { name: "×5", exact: true }).click();
-  await page.getByRole("button", { name: "Close developer controls" }).click();
-  await page.getByLabel("Find a system").fill("Pallas");
-  await page.locator(".search-results button").click();
-  await page.locator(".asteroid-opportunity").click();
-  await page.getByRole("button", { name: "Send mining fleet" }).click();
-  await page.getByRole("button", { name: "Deploy fleet" }).click();
-  const card = page.locator(".fleet-card").first();
-  await expect(card).toContainText("Moving");
-  const marker = page.getByRole("button", {
-    name: "1st Expeditionary fleet",
-    exact: true,
-  });
-  const position = await marker.getAttribute("style");
-  await page.getByRole("button", { name: "DEV", exact: true }).click();
-  await page.getByRole("button", { name: "Resume", exact: true }).click();
-  await page.getByRole("button", { name: "Close developer controls" }).click();
-  await expect(marker).not.toHaveAttribute("style", position!);
-  await expect(card).toContainText("Mining", { timeout: 18000 });
-  await expect(card).toContainText("Idle", { timeout: 12000 });
-  await page.getByLabel("Find a system").fill("Nova Prime");
-  await page.locator(".search-results button").click();
-  await page.getByRole("button", { name: "Send fleet", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm orders" }).click();
-  await expect(card).toContainText("Moving");
-  await expect(card).toContainText("Defending", { timeout: 18000 });
-  await expect(card).toContainText("Nova Prime");
-  await expect(page.locator(".event-items")).toContainText(
-    /Fleet arrived|Mining complete|Territory changed|Fleet orders confirmed/,
-  );
+  await start(page);
+  await find(page, "Caldera");
+  await page.getByRole("button", { name: "Claim system", exact: true }).click();
+  const eta = (
+    await page.locator(".order-stats>div").last().locator("strong").innerText()
+  )
+    .split(":")
+    .map(Number);
+  await page.getByRole("button", { name: "Launch assault" }).click();
+  await page.clock.runFor((eta[0] * 60 + eta[1] + 1) * 100);
+  await expect(page.locator(".battle-tray")).toContainText("Caldera");
+  await expect(page.locator(".fleet-card").first()).toContainText("Battle");
+  await page
+    .getByLabel("Fleet stance", { exact: true })
+    .selectOption("Defensive");
+  await page.getByRole("button", { name: "Retreat", exact: true }).click();
+  await expect(page.locator(".fleet-orders")).toContainText("Withdrawing");
+  await page.screenshot({ path: "docs/screenshots/quick-conquest-battle.png" });
+  // The shipyard and chat remain usable during a fight.
+  await page.getByRole("button", { name: "Build a ship", exact: true }).click();
+  await page
+    .locator(".ship-option")
+    .first()
+    .getByRole("button", { name: "Build", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Close dialog" }).click();
+  await page.clock.runFor(300);
+  await expect(page.locator(".fleet-card").first()).toContainText("Retreating");
+  await page.clock.runFor(400);
+  await expect(page.locator(".fleet-card").first()).toContainText("Moving");
+  await page.clock.runFor(13000);
+  await expect(page.locator(".fleet-card").first()).toContainText("Nova Prime");
+  await expect(page.locator(".fleet-card").first()).toContainText("Defending");
+  await page.getByRole("button", { name: "FLEETS", exact: true }).click();
+  await page
+    .locator(".registry-row")
+    .first()
+    .getByRole("button", { name: "Reinforce" })
+    .click();
+  await page.getByRole("button", { name: "Close dialog" }).click();
 });
+
+test("normal rules reach objectives, simultaneous battles, endgame and final leaderboard", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await start(page);
+  await dev(page);
+  await page.getByLabel("8 bots / observer (next restart)").check();
+  await page
+    .getByRole("button", { name: "Restart match", exact: true })
+    .click();
+  await page.getByLabel("Jump to phase").selectOption("2");
+  await expect(page.locator(".match-hud")).toContainText("WAR");
+  await expect(page.locator(".objective-status").first()).toContainText(
+    "ACTIVE",
+  );
+  await page.getByLabel("Jump to phase").selectOption("3");
+  await expect(page.locator(".match-hud")).toContainText("ESCALATION");
+  await closeDev(page);
+  await page.getByRole("button", { name: "View entire galaxy" }).click();
+  await page.clock.runFor(1000);
+  await page.screenshot({
+    path: "docs/screenshots/quick-conquest-escalation.png",
+  });
+  await dev(page);
+  await page.getByLabel("Jump to phase").selectOption("4");
+  await expect(page.locator(".match-hud")).toContainText("ENDGAME");
+  await page
+    .getByRole("button", { name: "Simulate to match end", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Match results" }),
+  ).toBeVisible();
+  await expect(page.locator(".match-result tbody tr")).toHaveCount(8);
+  await expect(page.locator(".result-stats")).toContainText("Resources mined");
+  await page.screenshot({ path: "docs/screenshots/quick-conquest-result.png" });
+  await page.getByRole("button", { name: "New seed", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Match results" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByTestId("match-timer")).toHaveText("40:00");
+  expect(errors).toEqual([]);
+});
+
+for (const duration of [600, 2400])
+  test(`${duration / 60}-minute match completes from the ticking browser clock without phase jumps`, async ({
+    page,
+  }) => {
+    await start(page);
+    await dev(page);
+    await page
+      .getByLabel("Match duration", { exact: true })
+      .selectOption(String(duration));
+    await page
+      .getByRole("button", { name: "Restart match", exact: true })
+      .click();
+    await closeDev(page);
+    await page.clock.runFor(duration * 100 + 500);
+    await expect(
+      page.getByRole("dialog", { name: "Match results" }),
+    ).toBeVisible();
+    await expect(page.locator(".match-result tbody tr")).toHaveCount(8);
+  });

@@ -1,0 +1,684 @@
+[
+  {
+    "seed": "ORION-7742",
+    "duration": 2400,
+    "reason": "timer",
+    "winner": "Cmdr. Vex",
+    "wallMs": 477,
+    "battles": 131,
+    "activeBattleSeconds": 788,
+    "maxSimultaneousBattles": 5,
+    "guardianKiller": "Cmdr. Vale",
+    "leviathanKiller": null,
+    "leaderboard": [
+      {
+        "rank": 1,
+        "name": "Cmdr. Vex",
+        "personality": "Expansionist",
+        "score": 3794,
+        "systems": 2,
+        "peak": 13,
+        "battles": 40,
+        "wins": 22,
+        "destroyed": 73,
+        "pirates": 3,
+        "guardian": 3,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 67,
+        "recoveries": 2,
+        "captures": 57,
+        "orders": 85,
+        "resources": {
+          "credits": 10514,
+          "alloy": 181,
+          "fuel": 8305
+        },
+        "bonuses": []
+      },
+      {
+        "rank": 2,
+        "name": "Admiral Sera",
+        "personality": "Aggressor",
+        "score": 3165,
+        "systems": 8,
+        "peak": 12,
+        "battles": 33,
+        "wins": 26,
+        "destroyed": 94,
+        "pirates": 1,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 47,
+        "recoveries": 0,
+        "captures": 46,
+        "orders": 77,
+        "resources": {
+          "credits": 8763,
+          "alloy": 489,
+          "fuel": 7933
+        },
+        "bonuses": [
+          "logistics",
+          "relay",
+          "relay",
+          "titanium"
+        ]
+      },
+      {
+        "rank": 3,
+        "name": "Cmdr. Vale",
+        "personality": "Expansionist",
+        "score": 2408,
+        "systems": 3,
+        "peak": 5,
+        "battles": 37,
+        "wins": 25,
+        "destroyed": 82,
+        "pirates": 1,
+        "guardian": 1,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 45,
+        "recoveries": 4,
+        "captures": 39,
+        "orders": 54,
+        "resources": {
+          "credits": 2073,
+          "alloy": 103,
+          "fuel": 5628
+        },
+        "bonuses": []
+      },
+      {
+        "rank": 4,
+        "name": "Ilyra",
+        "personality": "Turtle",
+        "score": 2054,
+        "systems": 3,
+        "peak": 7,
+        "battles": 29,
+        "wins": 14,
+        "destroyed": 60,
+        "pirates": 2,
+        "guardian": 1,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 60,
+        "recoveries": 1,
+        "captures": 35,
+        "orders": 58,
+        "resources": {
+          "credits": 4463,
+          "alloy": 526,
+          "fuel": 6086
+        },
+        "bonuses": [
+          "sensors"
+        ]
+      },
+      {
+        "rank": 5,
+        "name": "Tal Kir",
+        "personality": "Opportunist",
+        "score": 1420,
+        "systems": 4,
+        "peak": 5,
+        "battles": 27,
+        "wins": 9,
+        "destroyed": 34,
+        "pirates": 0,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 57,
+        "recoveries": 0,
+        "captures": 19,
+        "orders": 39,
+        "resources": {
+          "credits": 4021,
+          "alloy": 236,
+          "fuel": 5842
+        },
+        "bonuses": [
+          "forge"
+        ]
+      },
+      {
+        "rank": 6,
+        "name": "Korrak",
+        "personality": "Aggressor",
+        "score": 1417,
+        "systems": 4,
+        "peak": 5,
+        "battles": 23,
+        "wins": 7,
+        "destroyed": 31,
+        "pirates": 1,
+        "guardian": 1,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 54,
+        "recoveries": 3,
+        "captures": 30,
+        "orders": 49,
+        "resources": {
+          "credits": 3069,
+          "alloy": 252,
+          "fuel": 5322
+        },
+        "bonuses": [
+          "trade",
+          "forge"
+        ]
+      },
+      {
+        "rank": 7,
+        "name": "Havel",
+        "personality": "Industrialist",
+        "score": 1360,
+        "systems": 2,
+        "peak": 6,
+        "battles": 22,
+        "wins": 7,
+        "destroyed": 38,
+        "pirates": 0,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 530,
+        "built": 49,
+        "recoveries": 2,
+        "captures": 25,
+        "orders": 44,
+        "resources": {
+          "credits": 1634,
+          "alloy": 275,
+          "fuel": 5432
+        },
+        "bonuses": []
+      },
+      {
+        "rank": 8,
+        "name": "Marshal Rowan",
+        "personality": "Opportunist",
+        "score": 1295,
+        "systems": 2,
+        "peak": 5,
+        "battles": 30,
+        "wins": 9,
+        "destroyed": 30,
+        "pirates": 0,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 54,
+        "recoveries": 3,
+        "captures": 33,
+        "orders": 53,
+        "resources": {
+          "credits": 1680,
+          "alloy": 147,
+          "fuel": 4376
+        },
+        "bonuses": []
+      }
+    ]
+  },
+  {
+    "seed": "HELIOS-2026",
+    "duration": 2400,
+    "reason": "timer",
+    "winner": "Cmdr. Vale",
+    "wallMs": 371,
+    "battles": 123,
+    "activeBattleSeconds": 788,
+    "maxSimultaneousBattles": 6,
+    "guardianKiller": "Cmdr. Vale",
+    "leviathanKiller": null,
+    "leaderboard": [
+      {
+        "rank": 1,
+        "name": "Cmdr. Vale",
+        "personality": "Expansionist",
+        "score": 3768,
+        "systems": 5,
+        "peak": 8,
+        "battles": 40,
+        "wins": 29,
+        "destroyed": 98,
+        "pirates": 2,
+        "guardian": 3,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 62,
+        "recoveries": 0,
+        "captures": 50,
+        "orders": 73,
+        "resources": {
+          "credits": 7182,
+          "alloy": 533,
+          "fuel": 7571
+        },
+        "bonuses": [
+          "forge",
+          "relay"
+        ]
+      },
+      {
+        "rank": 2,
+        "name": "Ilyra",
+        "personality": "Aggressor",
+        "score": 3214,
+        "systems": 5,
+        "peak": 7,
+        "battles": 30,
+        "wins": 19,
+        "destroyed": 67,
+        "pirates": 0,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 51,
+        "recoveries": 1,
+        "captures": 44,
+        "orders": 64,
+        "resources": {
+          "credits": 7763,
+          "alloy": 57,
+          "fuel": 8590
+        },
+        "bonuses": [
+          "sensors"
+        ]
+      },
+      {
+        "rank": 3,
+        "name": "Admiral Sera",
+        "personality": "Aggressor",
+        "score": 2686,
+        "systems": 4,
+        "peak": 8,
+        "battles": 35,
+        "wins": 23,
+        "destroyed": 87,
+        "pirates": 1,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 52,
+        "recoveries": 1,
+        "captures": 48,
+        "orders": 64,
+        "resources": {
+          "credits": 4718,
+          "alloy": 202,
+          "fuel": 7401
+        },
+        "bonuses": [
+          "titanium",
+          "logistics"
+        ]
+      },
+      {
+        "rank": 4,
+        "name": "Korrak",
+        "personality": "Turtle",
+        "score": 2220,
+        "systems": 3,
+        "peak": 8,
+        "battles": 27,
+        "wins": 8,
+        "destroyed": 37,
+        "pirates": 0,
+        "guardian": 2,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 54,
+        "recoveries": 2,
+        "captures": 35,
+        "orders": 58,
+        "resources": {
+          "credits": 5868,
+          "alloy": 119,
+          "fuel": 6636
+        },
+        "bonuses": []
+      },
+      {
+        "rank": 5,
+        "name": "Havel",
+        "personality": "Opportunist",
+        "score": 1754,
+        "systems": 3,
+        "peak": 6,
+        "battles": 27,
+        "wins": 9,
+        "destroyed": 49,
+        "pirates": 2,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 265,
+        "built": 61,
+        "recoveries": 0,
+        "captures": 22,
+        "orders": 48,
+        "resources": {
+          "credits": 4696,
+          "alloy": 725,
+          "fuel": 6230
+        },
+        "bonuses": [
+          "forge"
+        ]
+      },
+      {
+        "rank": 6,
+        "name": "Cmdr. Vex",
+        "personality": "Expansionist",
+        "score": 1455,
+        "systems": 3,
+        "peak": 5,
+        "battles": 24,
+        "wins": 7,
+        "destroyed": 39,
+        "pirates": 2,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 53,
+        "recoveries": 2,
+        "captures": 27,
+        "orders": 42,
+        "resources": {
+          "credits": 4882,
+          "alloy": 922,
+          "fuel": 5461
+        },
+        "bonuses": [
+          "trade"
+        ]
+      },
+      {
+        "rank": 7,
+        "name": "Marshal Rowan",
+        "personality": "Industrialist",
+        "score": 1035,
+        "systems": 3,
+        "peak": 4,
+        "battles": 23,
+        "wins": 11,
+        "destroyed": 42,
+        "pirates": 1,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 1140,
+        "built": 47,
+        "recoveries": 5,
+        "captures": 22,
+        "orders": 41,
+        "resources": {
+          "credits": 1460,
+          "alloy": 1278,
+          "fuel": 5337
+        },
+        "bonuses": [
+          "relay"
+        ]
+      },
+      {
+        "rank": 8,
+        "name": "Tal Kir",
+        "personality": "Opportunist",
+        "score": 681,
+        "systems": 2,
+        "peak": 4,
+        "battles": 22,
+        "wins": 8,
+        "destroyed": 38,
+        "pirates": 0,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 39,
+        "recoveries": 5,
+        "captures": 18,
+        "orders": 36,
+        "resources": {
+          "credits": 833,
+          "alloy": 248,
+          "fuel": 4274
+        },
+        "bonuses": []
+      }
+    ]
+  },
+  {
+    "seed": "VEGA-28",
+    "duration": 2400,
+    "reason": "timer",
+    "winner": "Ilyra",
+    "wallMs": 332,
+    "battles": 117,
+    "activeBattleSeconds": 819,
+    "maxSimultaneousBattles": 6,
+    "guardianKiller": "Ilyra",
+    "leviathanKiller": null,
+    "leaderboard": [
+      {
+        "rank": 1,
+        "name": "Ilyra",
+        "personality": "Turtle",
+        "score": 5207,
+        "systems": 5,
+        "peak": 10,
+        "battles": 42,
+        "wins": 30,
+        "destroyed": 86,
+        "pirates": 0,
+        "guardian": 4,
+        "leviathan": 0,
+        "mined": 550,
+        "built": 71,
+        "recoveries": 0,
+        "captures": 61,
+        "orders": 106,
+        "resources": {
+          "credits": 10957,
+          "alloy": 581,
+          "fuel": 8961
+        },
+        "bonuses": [
+          "titanium"
+        ]
+      },
+      {
+        "rank": 2,
+        "name": "Korrak",
+        "personality": "Aggressor",
+        "score": 2681,
+        "systems": 4,
+        "peak": 8,
+        "battles": 35,
+        "wins": 21,
+        "destroyed": 77,
+        "pirates": 2,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 57,
+        "recoveries": 1,
+        "captures": 40,
+        "orders": 60,
+        "resources": {
+          "credits": 7752,
+          "alloy": 376,
+          "fuel": 7127
+        },
+        "bonuses": []
+      },
+      {
+        "rank": 3,
+        "name": "Tal Kir",
+        "personality": "Opportunist",
+        "score": 2141,
+        "systems": 3,
+        "peak": 7,
+        "battles": 28,
+        "wins": 16,
+        "destroyed": 66,
+        "pirates": 1,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 52,
+        "recoveries": 1,
+        "captures": 32,
+        "orders": 50,
+        "resources": {
+          "credits": 5987,
+          "alloy": 954,
+          "fuel": 6291
+        },
+        "bonuses": [
+          "forge",
+          "relay"
+        ]
+      },
+      {
+        "rank": 4,
+        "name": "Cmdr. Vex",
+        "personality": "Opportunist",
+        "score": 1957,
+        "systems": 4,
+        "peak": 8,
+        "battles": 23,
+        "wins": 9,
+        "destroyed": 39,
+        "pirates": 2,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 51,
+        "recoveries": 2,
+        "captures": 34,
+        "orders": 58,
+        "resources": {
+          "credits": 4260,
+          "alloy": 105,
+          "fuel": 6100
+        },
+        "bonuses": [
+          "logistics",
+          "trade"
+        ]
+      },
+      {
+        "rank": 5,
+        "name": "Havel",
+        "personality": "Expansionist",
+        "score": 1443,
+        "systems": 3,
+        "peak": 6,
+        "battles": 21,
+        "wins": 5,
+        "destroyed": 32,
+        "pirates": 1,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 530,
+        "built": 61,
+        "recoveries": 2,
+        "captures": 19,
+        "orders": 39,
+        "resources": {
+          "credits": 2266,
+          "alloy": 538,
+          "fuel": 5348
+        },
+        "bonuses": [
+          "forge"
+        ]
+      },
+      {
+        "rank": 6,
+        "name": "Cmdr. Vale",
+        "personality": "Expansionist",
+        "score": 1337,
+        "systems": 4,
+        "peak": 6,
+        "battles": 25,
+        "wins": 10,
+        "destroyed": 48,
+        "pirates": 1,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 265,
+        "built": 46,
+        "recoveries": 1,
+        "captures": 15,
+        "orders": 37,
+        "resources": {
+          "credits": 2266,
+          "alloy": 270,
+          "fuel": 5758
+        },
+        "bonuses": [
+          "sensors"
+        ]
+      },
+      {
+        "rank": 7,
+        "name": "Marshal Rowan",
+        "personality": "Aggressor",
+        "score": 1169,
+        "systems": 3,
+        "peak": 4,
+        "battles": 23,
+        "wins": 10,
+        "destroyed": 46,
+        "pirates": 1,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 0,
+        "built": 37,
+        "recoveries": 3,
+        "captures": 26,
+        "orders": 41,
+        "resources": {
+          "credits": 1379,
+          "alloy": 73,
+          "fuel": 5221
+        },
+        "bonuses": [
+          "relay"
+        ]
+      },
+      {
+        "rank": 8,
+        "name": "Admiral Sera",
+        "personality": "Industrialist",
+        "score": 762,
+        "systems": 2,
+        "peak": 5,
+        "battles": 17,
+        "wins": 5,
+        "destroyed": 23,
+        "pirates": 0,
+        "guardian": 0,
+        "leviathan": 0,
+        "mined": 530,
+        "built": 44,
+        "recoveries": 4,
+        "captures": 19,
+        "orders": 35,
+        "resources": {
+          "credits": 592,
+          "alloy": 456,
+          "fuel": 4890
+        },
+        "bonuses": []
+      }
+    ]
+  }
+]
