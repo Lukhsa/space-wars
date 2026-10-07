@@ -27,10 +27,10 @@ test("galaxy fills the viewport, keeps textured bodies visible and supports over
   });
   await expect(field.locator("image")).toHaveCount(1);
   expect((await field.locator("image").boundingBox())!.width).toBeGreaterThan(
-    120,
+    32,
   );
   await field.press("Space");
-  await expect(page.locator(".system-title h1")).toHaveText("Nova Prime Belt");
+  await expect(page.locator(".system-title h1")).toHaveText("Nova Prime Drift");
   await page.getByRole("button", { name: "Hide system panel" }).click();
   await page.getByRole("button", { name: "Hide command panel" }).click();
   expect(await stage.boundingBox()).toEqual(initial);
@@ -40,6 +40,16 @@ test("galaxy fills the viewport, keeps textured bodies visible and supports over
   await expect(field.locator("image")).toBeVisible();
   await page.getByRole("button", { name: "View entire galaxy" }).click();
   await expect(page.locator("[data-system]")).toHaveCount(28);
+  const appearances = await page
+    .locator(".resource-asteroid-art")
+    .evaluateAll((images) => images.map((image) => image.getAttribute("href")));
+  expect(new Set(appearances).size).toBe(9);
+  expect(
+    appearances.every((path) => path?.startsWith("/assets/asteroid_")),
+  ).toBe(true);
+  expect(await page.locator(".single-asteroid").count()).toBeGreaterThan(
+    await page.locator(".debris-drift").count(),
+  );
   await page.getByRole("button", { name: "Focus homeworld" }).click();
   await expect
     .poll(() =>
@@ -88,7 +98,7 @@ test("phone opens onto the map with command panels available on demand", async (
   );
 });
 
-test("the entire belt is clickable and opens its mining order", async ({
+test("the whole mining site is clickable and opens its matching mining order", async ({
   page,
 }) => {
   await page.goto("/");
@@ -98,6 +108,10 @@ test("the entire belt is clickable and opens its mining order", async ({
     exact: true,
   });
   await expect(field).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".asteroid-hero > img")).toHaveAttribute(
+    "src",
+    (await field.locator(".resource-asteroid-art").getAttribute("href"))!,
+  );
   await expect
     .poll(async () => {
       const bounds = (await field.locator(".field-hit-area").boundingBox())!;
@@ -116,15 +130,15 @@ test("the entire belt is clickable and opens its mining order", async ({
     );
     await expect(field).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".system-title h1")).toHaveText(
-      "Nova Prime Belt",
+      "Nova Prime Drift",
     );
   }
   await page
     .getByRole("button", { name: "Send mining fleet", exact: true })
     .click();
-  await expect(page.getByRole("dialog")).toContainText("Nova Prime Belt");
+  await expect(page.getByRole("dialog")).toContainText("Nova Prime Drift");
   await page.getByRole("button", { name: "Close dialog" }).click();
-  // A drag across the belt must pan the map without selecting it.
+  // A drag across the mining site must pan the map without selecting it.
   await page.getByRole("button", { name: "View system", exact: true }).click();
   const box = (await field.locator(".field-hit-area").boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

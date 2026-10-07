@@ -485,8 +485,18 @@
 .asteroid-field:hover .field-hit-area,
 .asteroid-field:focus .field-hit-area,
 .asteroid-field.selected .field-hit-area {
-  stroke: #dec38c;
-  fill: #b69b5810;
+  stroke: transparent;
+  fill: transparent;
+}
+.asteroid-field:focus-visible .field-hit-area {
+  stroke: currentColor;
+  stroke-dasharray: 4 5;
+}
+.resource-selection {
+  opacity: 0.8;
+}
+.debris-drift .field-name {
+  fill: #d2c2a5;
 }
 .field-name {
   fill: #c8c5b8;
@@ -501,12 +511,21 @@
   fill: #9eaeb7;
 }
 .asteroid-hero > img {
-  width: 190px;
-  height: 85px;
+  width: 112px;
+  height: 112px;
 }
 .asteroid-field:hover image,
 .asteroid-field:focus image {
   filter: brightness(1.4);
+}
+@media (min-width: 901px) {
+  .match-hud {
+    left: max(272px, var(--left-inset));
+    right: max(110px, var(--right-inset));
+  }
+  .fleet-dock {
+    right: max(252px, var(--right-inset));
+  }
 }
 @media (min-width: 1700px) {
   .app-shell {

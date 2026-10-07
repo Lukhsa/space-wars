@@ -49,6 +49,7 @@ import {
   shipRole,
 } from "./components/QuickConquest";
 import GalaxyMap from "./components/GalaxyMap";
+import { asteroidAppearance, asteroidSiteName } from "./demo/asteroid-art";
 import {
   asset,
   civilizations,
@@ -550,12 +551,11 @@ export default function App() {
               {relation}
             </div>
             <h1>
-              {s.name}
-              {asteroid ? " Belt" : ""}
+              {asteroid ? asteroidSiteName(state.seed, s.id, s.name) : s.name}
             </h1>
             <p>
               {asteroid
-                ? "Asteroid field · High-yield deposits"
+                ? `${asteroidAppearance(state.seed, s.id).material} · Mining site`
                 : `${STAR_NAMES[s.star]} · ${s.region}`}
             </p>
           </div>
@@ -567,7 +567,7 @@ export default function App() {
               key={`${selected}-${asteroid}`}
               src={asset(
                 asteroid
-                  ? "original/asteroid-belt.webp"
+                  ? asteroidAppearance(state.seed, s.id).art
                   : `original/sun-type-${s.star}.webp`,
               )}
               className={asteroid ? "" : `star-art star-type-${s.star}`}
@@ -694,9 +694,12 @@ export default function App() {
                 className="asteroid-opportunity"
                 onClick={() => focusOn(selected, true)}
               >
-                <img src={asset("original/asteroid-belt.webp")} alt="" />
+                <img
+                  src={asset(asteroidAppearance(state.seed, s.id).art)}
+                  alt=""
+                />
                 <span>
-                  <strong>{s.name} Belt</strong>
+                  <strong>{asteroidSiteName(state.seed, s.id, s.name)}</strong>
                   <small>Rich Alloy deposits</small>
                 </span>
                 <ChevronRight size={14} />
@@ -1261,7 +1264,7 @@ export default function App() {
             <img
               src={asset(
                 order.mission === "mine"
-                  ? "original/asteroid-belt.webp"
+                  ? asteroidAppearance(state.seed, order.target).art
                   : planets[state.systems[order.target].planet],
               )}
               alt=""
@@ -1270,7 +1273,9 @@ export default function App() {
               <span className="eyebrow">DESTINATION</span>
               <h3>
                 {state.systems[order.target].name}
-                {order.mission === "mine" ? " Belt" : ""}
+                {order.mission === "mine"
+                  ? ` ${asteroidAppearance(state.seed, order.target).suffix}`
+                  : ""}
               </h3>
               <p>
                 {state.systems[order.target].owner === null

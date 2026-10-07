@@ -1,5 +1,6 @@
 import { WORLD } from "./catalog";
 import { randomFrom } from "./random";
+import { asteroidAppearance } from "./asteroid-art";
 import type { Point, System } from "./types";
 
 export interface PlanetVisual extends Point {
@@ -10,9 +11,8 @@ export interface PlanetVisual extends Point {
 export interface AsteroidVisual extends Point {
   system: number;
   angle: number;
+  appearance: ReturnType<typeof asteroidAppearance>;
 }
-export const FIELD_WIDTH = 168;
-export const FIELD_HEIGHT = 64;
 // Covers the rotated artwork, complete pointer target and label at every zoom.
 export const FIELD_RADIUS = 108;
 export const FIELD_GAP = 24;
@@ -102,6 +102,7 @@ export function createMapLayout(systems: System[], seed: string) {
       ...position,
       system: system.id,
       angle: (random() - 0.5) * 50,
+      appearance: asteroidAppearance(seed, system.id),
     });
     occupied.push({ ...position, radius: FIELD_RADIUS });
   }

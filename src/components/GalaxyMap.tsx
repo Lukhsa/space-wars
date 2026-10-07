@@ -21,7 +21,8 @@ import { visibleSystems } from "../demo/model";
 import { randomFrom } from "../demo/galaxy";
 import { fleetPosition, moving } from "../demo/simulation";
 import { createCells, territoryPaths } from "../demo/territory";
-import { createMapLayout, FIELD_WIDTH, FIELD_HEIGHT } from "../demo/map-layout";
+import { createMapLayout } from "../demo/map-layout";
+import { ASTEROID_ART, asteroidSiteName } from "../demo/asteroid-art";
 import type { DemoState, Filter, Point } from "../demo/types";
 
 interface Props {
@@ -524,6 +525,13 @@ export default function GalaxyMap({
         onPointerLeave={() => setHover(null)}
       >
         <defs>
+          {ASTEROID_ART.map((art, i) => (
+            <radialGradient key={i} id={`mineralDust-${i}`}>
+              <stop stopColor={art.color} stopOpacity=".12" />
+              <stop offset=".5" stopColor={art.color} stopOpacity=".05" />
+              <stop offset="1" stopColor={art.color} stopOpacity="0" />
+            </radialGradient>
+          ))}
           <radialGradient id="nebulaBlue">
             <stop stopColor="#315c6d" stopOpacity=".2" />
             <stop offset="1" stopColor="#152b39" stopOpacity="0" />
@@ -724,17 +732,15 @@ export default function GalaxyMap({
                 Math.abs(field.y - camera.y) > size.height / camera.z / 2 + 140
               )
                 return null;
-              const width = Math.max(FIELD_WIDTH, 32 / camera.z);
-              const height = (width * FIELD_HEIGHT) / FIELD_WIDTH;
-              const angle = (field.angle * Math.PI) / 180;
-              const halfWidth =
-                (Math.abs(Math.cos(angle)) * width +
-                  Math.abs(Math.sin(angle)) * height) /
+              const art = field.appearance;
+              const diameter = Math.max(art.size, 18 / camera.z);
+              const angle = (art.angle * Math.PI) / 180;
+              const extent =
+                ((Math.abs(Math.cos(angle)) + Math.abs(Math.sin(angle))) *
+                  diameter) /
                 2;
-              const halfHeight =
-                (Math.abs(Math.sin(angle)) * width +
-                  Math.abs(Math.cos(angle)) * height) /
-                2;
+              const halfWidth = art.drift ? Math.max(84, extent) : extent;
+              const halfHeight = art.drift ? Math.max(56, extent) : extent;
               return (
                 <g key={s.id} opacity={emphasized(s.id) || active ? 1 : 0.2}>
                   {(active || hovered) && (
@@ -751,8 +757,10 @@ export default function GalaxyMap({
                   )}
                   <g
                     transform={`translate(${field.x} ${field.y})`}
-                    className={`asteroid-field ${active ? "selected" : ""}`}
+                    className={`asteroid-field ${art.drift ? "debris-drift" : "single-asteroid"} ${active ? "selected" : ""}`}
                     data-asteroid-system={s.id}
+                    data-art-variant={art.variant}
+                    style={{ color: art.color }}
                     role="button"
                     tabIndex={0}
                     aria-label={`${s.name} asteroid field`}
@@ -781,39 +789,75 @@ export default function GalaxyMap({
                       x={-halfWidth - 8}
                       y={-halfHeight - 8}
                       width={halfWidth * 2 + 16}
-                      height={
-                        halfHeight + Math.max(halfHeight, height / 2 + 26) + 16
-                      }
+                      height={halfHeight * 2 + 42}
                       rx="12"
                       fill="transparent"
                       pointerEvents="all"
                     />
+                    {art.drift && detail !== "far" && (
+                      <g className="mineral-dust" pointerEvents="none">
+                        <ellipse
+                          rx="82"
+                          ry="47"
+                          fill={`url(#mineralDust-${art.variant})`}
+                          transform={`rotate(${art.angle / 3})`}
+                        />
+                        <ellipse
+                          cx="26"
+                          cy="12"
+                          rx="58"
+                          ry="28"
+                          fill={`url(#mineralDust-${art.variant})`}
+                          opacity=".55"
+                        />
+                        {art.fragments.map((fragment, i) => (
+                          <path
+                            key={i}
+                            d={`M${fragment.x} ${fragment.y - fragment.size}l${fragment.size} ${fragment.size * 0.6} ${-fragment.size * 0.3} ${fragment.size} ${-fragment.size * 1.4} ${-fragment.size * 0.25}Z`}
+                            fill={i % 3 === 0 ? art.color : "#9babb6"}
+                            opacity={fragment.opacity}
+                          />
+                        ))}
+                      </g>
+                    )}
                     <image
-                      href={asset("original/asteroid-belt.webp")}
-                      x={-width / 2}
-                      y={-height / 2}
-                      width={width}
-                      height={height}
-                      transform={`rotate(${field.angle})`}
+                      className="resource-asteroid-art"
+                      href={asset(art.art)}
+                      x={-diameter / 2}
+                      y={-diameter / 2}
+                      width={diameter}
+                      height={diameter}
+                      transform={`rotate(${art.angle})`}
                       pointerEvents="none"
                     />
+                    {(active || hovered) && (
+                      <circle
+                        className="resource-selection"
+                        r={diameter * 0.63}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1"
+                        strokeDasharray="9 6"
+                        pointerEvents="none"
+                      />
+                    )}
                     {(detail !== "far" || active || hovered) && (
                       <>
                         <text
-                          y={height / 2 + 11}
+                          y={halfHeight + 14}
                           textAnchor="middle"
                           className="field-name"
                           pointerEvents="none"
                         >
-                          {s.name} Belt
+                          {s.name} {art.suffix}
                         </text>
                         <text
-                          y={height / 2 + 23}
+                          y={halfHeight + 26}
                           textAnchor="middle"
                           className="asteroid-label"
                           pointerEvents="none"
                         >
-                          MINEABLE · ALLOY / FUEL
+                          {art.material.toUpperCase()} · MINEABLE
                         </text>
                       </>
                     )}
@@ -1102,8 +1146,9 @@ export default function GalaxyMap({
           <Orbit size={16} />
           <div>
             <strong>
-              {state.systems[hover].name}
-              {hoverAsteroid ? " Belt" : ""}
+              {hoverAsteroid
+                ? asteroidSiteName(state.seed, hover, state.systems[hover].name)
+                : state.systems[hover].name}
             </strong>
             <span>
               {state.systems[hover].owner === null

@@ -234,6 +234,48 @@
       "sourcePath": "src/assets/artwork/war2_nebula_battlefield.webp",
       "purpose": "Galaxy backdrop, unchanged local copy",
       "sha256": "bc4b5e406bd99c0d94e4a9c86b614d182f6fbb5913a0112dc943fa2ae2731a04"
+    },
+    {
+      "path": "public/assets/asteroid_large_02.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/asteroid_large_02.webp",
+      "purpose": "Original asteroid artwork for individually selectable mining sites; unchanged local copy",
+      "sha256": "1546cc13376360f747a777375e74b705d4096ef645fc1f0ab4bd40bff0d86f76"
+    },
+    {
+      "path": "public/assets/asteroid_large_03.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/asteroid_large_03.webp",
+      "purpose": "Original asteroid artwork for individually selectable mining sites; unchanged local copy",
+      "sha256": "64eaf094d87434d58a413d0ad8d80b1ab92c5205c87fd83ad3af0f85848df1b0"
+    },
+    {
+      "path": "public/assets/asteroid_medium_02.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/asteroid_medium_02.webp",
+      "purpose": "Original asteroid artwork for individually selectable mining sites; unchanged local copy",
+      "sha256": "7440babd135aa49daabb57f71c15a810f70734f69871a3b3afad29ff44d3db9f"
+    },
+    {
+      "path": "public/assets/asteroid_medium_03.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/asteroid_medium_03.webp",
+      "purpose": "Original asteroid artwork for individually selectable mining sites; unchanged local copy",
+      "sha256": "2e7e8d5e2c07be43d2b4b197a51bf60b070d4e2b96f5be2999a0a1e3b83717d0"
+    },
+    {
+      "path": "public/assets/asteroid_small_02.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/asteroid_small_02.webp",
+      "purpose": "Original asteroid artwork for individually selectable mining sites; unchanged local copy",
+      "sha256": "7dbf908b6d2eb80fd1a91d05fa35f20a5798b048f59d6bc12be9bd315981c63a"
+    },
+    {
+      "path": "public/assets/asteroid_small_03.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/asteroid_small_03.webp",
+      "purpose": "Original asteroid artwork for individually selectable mining sites; unchanged local copy",
+      "sha256": "2b5a137e4e338a5e1228eca4d74653e0aca76e0f9fdaa0e986772b5e3cddb9b5"
     }
   ],
   "originalAssets": [
@@ -421,14 +463,6 @@
       "source": "public/assets/original/sun-photosphere.webp",
       "purpose": "Cached spectral color variant of built-in imagegen sun; replaces runtime SVG filters",
       "sha256": "9607768edfc49cacae2d9e7b342af70537c1f1f6461ea778479fe08fc5be48c4"
-    },
-    {
-      "path": "public/assets/original/asteroid-belt.webp",
-      "origin": "ORIGINAL SPACE WARS ASSET",
-      "generator": "Built-in imagegen, transparent raster; resized to 768px WebP preserving alpha",
-      "purpose": "One coherent visual and full click target per mineable asteroid field",
-      "prompt": "Use case: stylized-concept. Asset type: single transparent asteroid belt sprite for a premium space strategy map. A standalone horizontal gently curved stream of asteroid debris, viewed obliquely from above. Elongated crescent ribbon about 3:1 width to height, centered with ample transparent margin. A coherent continuous dusty rocky belt: thousands of fine irregular stony fragments embedded in smoky mineral dust, subtle steel-gray and warm brown highlights, varied small granular rock detail. Several modest jagged fragments integrated into the ribbon, none dominating. Densest broad middle tapering naturally to fine wisps at both ends. Realistic AAA space game rendering matching photographic planet textures. Neutral soft directional lighting, readable against deep blue-black space. The whole image must read as ONE connected asteroid field, not a collection of separately placed large boulders or balls. No planet, no sun, no complete ring, no circular object in middle, no orbit diagram, no starfield, no black backdrop, no outline, no text, no icons, no watermark. Genuine alpha transparency surrounding and between the fine debris. Wide composition.",
-      "sha256": "29d6efb6eac37b029d33f9e29d1a622590b770bccd9c61e9bc762a8fc71fc6b0"
     }
   ]
 }
