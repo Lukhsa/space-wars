@@ -1,0 +1,1135 @@
+We are starting implementation of SPACE WARS Phase 1.
+
+This is NOT a backend phase.
+
+The purpose of this phase is to build a polished, locally playable VISUAL PROTOTYPE of the Space Wars browser game so I can decide whether the core galaxy-map concept actually looks and feels good enough to continue developing.
+
+I care much more about:
+
+- visual quality
+- galaxy presentation
+- map interaction
+- territory
+- movement
+- atmosphere
+- information hierarchy
+- satisfying interactions
+
+than I do about production architecture right now.
+
+DO NOT turn this into another architecture/documentation exercise.
+
+BUILD THE PROTOTYPE.
+
+==================================================
+WORKSPACE RULES
+==================================================
+
+Writable repository:
+
+- Space Wars
+- https://github.com/Lukhsa/space-wars
+
+READ-ONLY reference repositories:
+
+- Space Explorer RPG Web
+- Space Explorer RPG Backend
+
+You may inspect the reference repositories and copy/adapt suitable assets or frontend patterns into Space Wars.
+
+DO NOT modify either reference repository.
+
+DO NOT:
+- commit to them
+- reset/stash/clean them
+- change branches in them
+- run their migrations
+- deploy anything from them
+- modify their files
+
+Space Wars must remain independently runnable without sibling repositories.
+
+Read AGENTS.md and the existing six Space Wars architecture documents first for context, but THIS PROMPT supersedes their Phase 1 implementation priority.
+
+The previous architecture work is useful reference material.
+
+However, DO NOT implement the proposed production backend, sequencer, PvP security model, Supabase schema, worker infrastructure or combat extraction yet.
+
+==================================================
+PRIMARY GOAL
+==================================================
+
+When I run:
+
+npm install
+npm run dev
+
+I want to open Space Wars in my browser and immediately see something that resembles a REAL polished browser strategy game.
+
+I want the prototype to answer this question:
+
+"Do I enjoy looking at, navigating and interacting with this galaxy enough that I want to build the real game?"
+
+The dashboard/map must therefore look substantially more polished than an engineering wireframe.
+
+Do not stop at plain cards, basic HTML controls, circles connected by lines or generic developer styling.
+
+VISUAL QUALITY IS AN ACCEPTANCE REQUIREMENT.
+
+Spend substantial effort on:
+- map composition
+- visual hierarchy
+- territories
+- planets
+- fleet motion
+- interaction feedback
+- dashboard density
+- sci-fi styling
+- polish
+
+Use the existing concept image/design direction from our project as the visual north star:
+
+A dark premium sci-fi strategic dashboard with:
+- central galaxy map
+- territory regions
+- planets
+- asteroids
+- fleet routes
+- side panels
+- resources
+- production
+- live events
+
+Do not reproduce concept art pixel-for-pixel.
+
+Build a practical implementation with the same feeling.
+
+==================================================
+NO BACKEND IN THIS PHASE
+==================================================
+
+Do NOT implement:
+
+- Supabase
+- database migrations
+- authentication
+- Google login
+- RLS
+- server workers
+- multiplayer networking
+- authoritative PvP
+- production persistence
+- production bot architecture
+- real account system
+- payments
+- deployment infrastructure
+
+Everything may run LOCALLY IN THE BROWSER.
+
+Generated/mock state is explicitly allowed.
+
+Prototype state may reset after refresh.
+
+localStorage is optional if simple.
+
+Do not let persistence distract from the prototype.
+
+==================================================
+TECH STACK
+==================================================
+
+Use:
+
+- React
+- TypeScript
+- Vite
+
+Use normal CSS or an appropriate lightweight styling approach.
+
+Do not introduce a heavy game engine.
+
+For the strategic galaxy map, start with SVG unless actual measured performance makes another approach necessary.
+
+SVG is preferred because this prototype requires:
+- clickable objects
+- labels
+- routes
+- hover effects
+- territory
+- pan/zoom
+- easy iteration
+
+Do not over-engineer the repository.
+
+==================================================
+THE MAIN SCREEN
+==================================================
+
+Build ONE strong primary dashboard.
+
+Approximate layout:
+
++---------------------------------------------------------------+
+| Navigation / Player / Credits / Alloy / Fuel / Fleet Power   |
++---------------+-------------------------------+---------------+
+|               |                               |               |
+| SELECTED      |                               | FLEETS /      |
+| SYSTEM        |        GALAXY MAP             | PRODUCTION    |
+|               |                               |               |
+| Planet info   |                               | Fleets        |
+| Owner         |                               | Build queue   |
+| Resources     |                               | Ships         |
+| Actions       |                               |               |
+|               |                               |               |
++---------------+-------------------------------+---------------+
+| EVENT LOG / ALERTS / WORLD ACTIVITY                           |
++---------------------------------------------------------------+
+
+The galaxy map should occupy most of the screen.
+
+The side panels should support the map rather than overpower it.
+
+==================================================
+GALAXY GENERATION
+==================================================
+
+Create a deterministic seeded demo galaxy.
+
+The SAME seed must generate the SAME galaxy.
+
+Initial target:
+
+- roughly 140–180 systems
+- roughly 30–40 commanders/empires
+- multiple civilizations
+- planets
+- asteroid fields
+- connected travel lanes
+- fleets
+- mining locations
+- neutral frontier territory
+
+Adjust numbers if necessary for readability/performance, but the world should feel LARGE.
+
+This should not look like a small 15-node tech tree.
+
+I should be able to pan around and discover different regions.
+
+Provide an easy developer control for:
+
+- current seed
+- regenerate galaxy
+- reset demo
+- pause/resume simulated activity
+- optionally speed up local simulation
+
+==================================================
+GALAXY GRAPH
+==================================================
+
+Generate systems using a visually believable layout.
+
+Requirements:
+
+- no ugly uniform grid
+- no completely random overlapping spaghetti
+- believable regional clusters
+- some sparse frontier areas
+- some dense strategic areas
+- chokepoints
+- alternate paths
+- connected graph
+- visually interesting geography
+
+System connections/lane lines should create a readable strategic network.
+
+Important systems may have larger visual prominence.
+
+==================================================
+PLANETS AND ASTEROIDS
+==================================================
+
+Systems should contain meaningful visual objects.
+
+Use existing approved Space Explorer assets from the reference Web project where appropriate.
+
+Audit and selectively copy suitable:
+
+- planet art
+- asteroid art
+- top-down ship art
+- faction/race images
+- emblems
+- icons
+
+Do NOT copy the entire asset repository.
+
+Create an asset provenance manifest recording:
+- new Space Wars path
+- original reference repo path
+- asset purpose
+
+Planets should look like planets, not colored circles.
+
+Asteroid belts/fields should be visually distinctive.
+
+Different regions should have visual variety.
+
+==================================================
+CIVILIZATIONS
+==================================================
+
+Use existing Space Explorer civilizations where source/assets support them.
+
+Target candidates include:
+
+- Humans
+- Engine Burners
+- Kraggs
+- Zetari
+- Solari
+- Space Elves / determine actual canonical equivalent
+- Winter Collective
+- one additional suitable existing civilization
+
+Audit the current reference code/assets to determine the exact canonical names.
+
+For Phase 1 civilization differences are VISUAL ONLY.
+
+Do not implement race bonuses yet.
+
+Each civilization should have:
+
+- clear faction color
+- name
+- generated commanders
+- emblem/portrait where available
+- territories
+
+Different factions must be easy to identify on the map.
+
+==================================================
+PLAYER SETUP
+==================================================
+
+Automatically create one local demo player.
+
+No login screen required.
+
+Use something like:
+
+Commander:
+Cmdr. Vale
+
+Civilization:
+Humans / appropriate human faction
+
+The player begins with:
+
+- homeworld
+- several controlled systems
+- Credits
+- Alloy
+- Fuel
+- several fleets
+- several ships
+- one active mining operation or nearby opportunity
+
+Give the player enough starting state that the dashboard looks alive immediately.
+
+Do not make me spend ten minutes setting things up before I can evaluate the UI.
+
+==================================================
+TERRITORY
+==================================================
+
+Territory rendering is one of the MOST IMPORTANT visual requirements.
+
+I want to immediately understand:
+
+- this is my empire
+- this belongs to another player
+- this belongs to another civilization
+- this is neutral frontier
+- this is a contested/border region
+
+DO NOT simply put a giant circle behind every owned system.
+
+Generate convincing strategic territory shapes from controlled systems.
+
+Possible approaches include:
+- Voronoi-style regions
+- smoothed hulls
+- influence fields
+- merged SVG polygons
+- another appropriate geometry technique
+
+Use transparent/subtle fills and stronger border/frontline emphasis.
+
+Territory should not hide the map underneath it.
+
+When ownership changes after a local attack, the territory visualization must visibly update.
+
+That ownership-change effect is one of the key things I want to evaluate.
+
+==================================================
+MAP INTERACTION
+==================================================
+
+The map must support:
+
+- click and drag to pan
+- mouse-wheel zoom
+- smooth zoom around pointer where practical
+- sensible min/max zoom
+- reset/focus control
+- hover system
+- click system
+- selected-system highlight
+- click fleet
+- click asteroid/planet where appropriate
+- route highlighting
+- fleet movement visualization
+
+Map interaction should feel smooth and deliberate.
+
+Do not make the user fight the camera.
+
+==================================================
+ZOOM LEVELS
+==================================================
+
+Use detail levels.
+
+At far zoom:
+
+Show:
+- large faction territories
+- major homeworlds
+- important system nodes
+- faction/region names
+- major fleet markers
+
+At medium zoom:
+
+Show:
+- system names
+- normal planets
+- major asteroid belts
+- fleets
+- routes
+
+At close zoom:
+
+Show:
+- more detailed planet artwork
+- asteroid resources
+- fleet details
+- mining indicators
+- selected-system details
+
+Avoid displaying every label simultaneously.
+
+Prevent unreadable text clutter.
+
+==================================================
+LEFT: SELECTED SYSTEM PANEL
+==================================================
+
+Clicking a system should populate a polished left-side inspector.
+
+Possible fields:
+
+SYSTEM NAME
+
+Primary planet artwork
+
+OWNER
+Commander Vex
+
+CIVILIZATION
+Solari
+
+RELATION
+Hostile / Neutral / Owned
+
+POPULATION
+temporary demo number
+
+DEFENSE
+temporary demo strength
+
+FLEET PRESENCE
+estimated or exact depending on ownership
+
+RESOURCE OUTPUT
+Credits / Alloy / Fuel
+
+ASTEROIDS
+if present
+
+Possible contextual buttons:
+
+[ VIEW ]
+[ SCOUT ]
+[ SEND FLEET ]
+[ ATTACK ]
+[ MINE ]
+[ CLAIM ]
+[ MANAGE ]
+
+Only show actions that make visual/contextual sense.
+
+These actions do not need production-grade mechanics.
+
+==================================================
+RIGHT: FLEETS
+==================================================
+
+Create several local player fleets.
+
+Example:
+
+1st Expeditionary
+Power 3,850
+Nova Prime
+Idle
+
+2nd Defense Fleet
+Power 2,400
+Aegis
+Defending
+
+Mining Group Alpha
+Power 820
+Pallas Belt
+Mining
+
+Fleet cards should show:
+
+- name
+- ship composition or icons
+- power
+- current system
+- status
+- destination
+- ETA if moving
+
+Clicking a fleet should select/focus it.
+
+==================================================
+FLEET MOVEMENT
+==================================================
+
+Fleet movement must actually work locally.
+
+User flow:
+
+1. Select owned fleet.
+2. Select destination.
+3. Choose MOVE / ATTACK / MINE depending on target.
+4. Show route.
+5. Show estimated travel time.
+6. Confirm.
+7. Fleet icon visibly moves along the route.
+8. ETA counts down.
+9. Arrival changes local state.
+
+For prototype testing use fast movement:
+
+approximately 15–60 seconds depending on route.
+
+Do not use final production timing.
+
+Movement should interpolate smoothly.
+
+It should not teleport from node to node.
+
+For multi-edge routes, visually travel along the complete route.
+
+==================================================
+ROUTES
+==================================================
+
+When a fleet is selected/moving:
+
+- emphasize its route
+- show direction
+- use a restrained animated/dashed travel treatment
+- distinguish player route from enemy activity
+
+Do not animate every lane constantly.
+
+The map should remain readable.
+
+==================================================
+LOCAL ATTACK / CAPTURE
+==================================================
+
+Implement a TEMPORARY MOCK combat/capture interaction.
+
+This is NOT the final Battle Lab V2 integration.
+
+Do not spend this phase extracting the full combat engine unless it is trivial after the dashboard is complete.
+
+Flow:
+
+1. Select hostile/neutral system.
+2. Click ATTACK.
+3. Select available player fleet.
+4. Show:
+   - fleet power
+   - enemy estimated power
+   - travel time
+5. Launch.
+6. Fleet visibly travels.
+7. On arrival resolve using simple seeded prototype logic.
+8. Display result.
+9. If victory:
+   - change owner
+   - update map
+   - change territory region
+   - update selected panel
+   - add event
+   - optionally show small victory notification
+
+Example temporary calculation:
+
+attacker power
+vs
+defender power
+plus bounded deterministic seed variation
+
+Keep this isolated in clearly named mock/demo logic.
+
+We will replace it later.
+
+The important thing is that CAPTURING TERRITORY SHOULD FEEL SATISFYING.
+
+==================================================
+MINING
+==================================================
+
+Asteroid fields should be interactive.
+
+Selected asteroid view:
+
+PALLAS BELT
+
+Resource:
+Alloy
+
+Richness:
+High
+
+Estimated yield:
++1,600 Alloy
+
+Status:
+Neutral
+
+[ SEND MINING FLEET ]
+
+When selected:
+
+1. choose eligible fleet
+2. fleet travels
+3. status becomes Mining
+4. show local countdown/progress
+5. increase resource locally when complete
+6. update event log
+
+Use fast demo timings.
+
+==================================================
+SHIP PRODUCTION
+==================================================
+
+Right-side production panel should support:
+
+- Frigate
+- Destroyer
+- Cruiser
+- Dreadnought
+
+Use existing appropriate top-down ship artwork if available.
+
+Temporary prototype build times:
+
+Frigate: 10 sec
+Destroyer: 20 sec
+Cruiser: 40 sec
+Dreadnought: 60 sec
+
+Temporary costs are fine.
+
+Click BUILD:
+
+- deduct local demo resources
+- add item to queue
+- show progress/countdown
+- when complete add reserve ship
+- create event entry
+
+Allow 1–2 simultaneous visual queue items if convenient.
+
+Again: this is prototype behavior, not final economy.
+
+==================================================
+FAKE RIVAL ACTIVITY
+==================================================
+
+The world must feel alive even while I am doing nothing.
+
+Do NOT implement production bot AI yet.
+
+Instead create local simulated rival activity.
+
+Generated rival commanders should periodically:
+
+- move fleets
+- begin mining
+- finish mining
+- contest neutral systems
+- attack each other occasionally
+- capture systems occasionally
+- reinforce borders
+
+Show visible movement where the player is allowed to see it.
+
+World activity should generate event-log entries.
+
+Use seeded randomness/schedules so behavior is reasonably reproducible.
+
+Avoid changing ownership every few seconds.
+
+The galaxy should feel alive, not chaotic.
+
+==================================================
+EVENT LOG
+==================================================
+
+Bottom panel should show ongoing world activity.
+
+Examples:
+
+12:42
+Fleet launched
+1st Expeditionary departed Nova Prime for Nexus.
+
+12:27
+Mining complete
+Pallas Belt produced 1,850 Alloy.
+
+12:14
+Enemy movement
+Solari fleet detected near Kareth.
+
+11:58
+Territory changed
+Kraggs captured Dravos.
+
+11:22
+Ship complete
+Destroyer completed at Nova Prime.
+
+10:45
+Battle
+Your fleet captured Nexus.
+
+Use icons and category distinction where appropriate.
+
+If practical, clicking a location-related event should focus that location.
+
+==================================================
+TOP RESOURCE BAR
+==================================================
+
+Display prominently:
+
+CREDITS
+ALLOY
+FUEL
+FLEET POWER
+
+Values should change locally during:
+
+- building
+- mining
+- captures
+- fake events where relevant
+
+Keep number formatting readable.
+
+Do not make this look like a generic admin dashboard.
+
+==================================================
+VISUAL STYLE
+==================================================
+
+Style direction:
+
+- dark navy / near-black space background
+- subtle stars / nebula texture
+- restrained luminous accents
+- sharp/compact sci-fi panels
+- thin borders
+- faction colors
+- strong hierarchy
+- readable typography
+- compact controls
+- subtle animations
+- polished hover/select states
+- no giant rounded mobile-style cards
+- no excessive glassmorphism
+- no excessive neon everywhere
+
+Think:
+
+premium PC/browser strategy game.
+
+Not:
+
+corporate SaaS dashboard.
+
+Not:
+
+mobile crypto game.
+
+Not:
+
+wireframe.
+
+The map should make the player want to explore it.
+
+==================================================
+BACKGROUND / ATMOSPHERE
+==================================================
+
+Create visual depth behind the strategic objects.
+
+Possible elements:
+
+- subtle stars
+- faint nebula/cloud regions
+- sector shading
+- sparse dust
+- slight parallax if cheap
+
+Do not make background noise reduce map readability.
+
+==================================================
+SELECTION / FEEDBACK
+==================================================
+
+Interactions must have clear feedback.
+
+Examples:
+
+Hovered system:
+subtle glow
+
+Selected system:
+strong ring/highlight
+
+Owned:
+player color
+
+Hostile:
+hostile faction color
+
+Neutral:
+muted gray
+
+Moving fleet:
+animated indicator
+
+Target destination:
+highlight
+
+Capture success:
+short restrained pulse/border transition
+
+Mining:
+small status/progress marker
+
+Avoid obnoxious constant animation.
+
+==================================================
+SYSTEM NAMES
+==================================================
+
+Generate believable sci-fi system names from deterministic lists/combinations.
+
+Avoid names like:
+
+System 001
+System 002
+
+Mix names such as:
+
+Nexus
+Helix
+Erebus
+Kareth
+Pallas
+Aegis
+Tycho
+Vesper
+
+and generated equivalents.
+
+Homeworlds and major systems should feel identifiable.
+
+==================================================
+COMMANDER NAMES
+==================================================
+
+Generate believable commander names.
+
+Avoid:
+
+Bot1
+AI_Player_27
+
+Use names like:
+
+Cmdr. Vex
+Admiral Sera
+Korrak
+Havel
+Tal Kir
+Rowan
+etc.
+
+This is a prototype, so a deterministic curated name pool is acceptable.
+
+==================================================
+MINIMAP
+==================================================
+
+If reasonably achievable, add a small galaxy minimap.
+
+It should show:
+
+- world bounds
+- major territories
+- current viewport
+
+Clicking minimap can optionally reposition main view.
+
+Do not let this feature block completion if it becomes expensive.
+
+==================================================
+MAP FILTERS
+==================================================
+
+Add simple filters/toggles such as:
+
+- All
+- Owned
+- Neutral
+- Hostile
+- Fleets
+- Asteroids
+
+These may control emphasis rather than literally hide everything.
+
+==================================================
+DEV CONTROLS
+==================================================
+
+Create a clearly DEV-only panel/control.
+
+Allow:
+
+- view/change seed
+- regenerate world
+- reset prototype
+- pause/resume fake activity
+- x1 / x2 / x5 simulation speed if easy
+
+Do not mix these controls into the player-facing design.
+
+==================================================
+RESPONSIVE BEHAVIOR
+==================================================
+
+Desktop is the design target.
+
+Optimize primarily for approximately:
+1920x1080
+and normal desktop/laptop browser sizes.
+
+It should still remain usable at smaller widths.
+
+Full mobile UX is NOT part of this phase.
+
+==================================================
+TESTS
+==================================================
+
+Do not waste excessive time testing cosmetic details.
+
+But include useful tests for:
+
+- same seed => same galaxy
+- galaxy graph remains connected
+- player spawn exists
+- ownership mutation works
+- fleet route/movement completion works
+- mining completion changes resources
+- build completion adds ship
+- capture changes owner
+- demo simulation does not produce invalid obvious state
+
+==================================================
+DO NOT OVER-ENGINEER
+==================================================
+
+This point is important.
+
+DO NOT spend the majority of this task building:
+
+- abstract repository layers
+- backend interfaces
+- database adapters
+- future microservices
+- massive contract systems
+- production PvP concurrency logic
+- authentication abstractions
+
+Build clean React/TypeScript code, but optimize for getting an excellent playable visual prototype on screen.
+
+If choosing between:
+
+A) another abstraction layer
+
+and
+
+B) making the map/interaction significantly better
+
+choose B for this phase.
+
+==================================================
+README
+==================================================
+
+Update README with exact local instructions:
+
+npm install
+npm run dev
+
+Also document:
+
+- prototype nature
+- no backend
+- fake/local systems
+- seed controls
+- which actions are implemented
+- which systems are placeholders
+
+==================================================
+ASSET PROVENANCE
+==================================================
+
+Create something like:
+
+docs/ASSET_PROVENANCE.md
+
+Record every asset copied from Space Explorer with:
+
+- original repository
+- original path
+- destination path
+- use in Space Wars
+
+Do not copy secrets/configuration/deployment files.
+
+==================================================
+ACCEPTANCE TEST
+==================================================
+
+Before considering Phase 1 complete, manually run the app and verify that a player can:
+
+1. Open the dashboard.
+2. Immediately understand their territory.
+3. Pan around a substantial galaxy.
+4. Zoom in and out smoothly.
+5. Inspect their own system.
+6. Inspect a rival system.
+7. Inspect an asteroid.
+8. Select one of their fleets.
+9. Send it somewhere.
+10. Watch it move.
+11. Attack a neutral/hostile target.
+12. See conquest change ownership/territory.
+13. Send a mining fleet.
+14. Receive mined resources.
+15. Build a ship.
+16. See the completed ship reflected in local state.
+17. Watch rival fleets/world events occur without player input.
+18. Read and interact with the event log.
+19. Change the demo seed and see a different believable galaxy.
+20. Reset the prototype.
+
+Most importantly:
+
+Stand back and assess whether it looks like a credible browser strategy game rather than a software demo.
+
+If it does not, continue polishing before declaring completion.
+
+==================================================
+QUALITY GATES
+==================================================
+
+Before finishing:
+
+- npm install / npm ci works
+- npm run dev works
+- typecheck passes
+- lint passes
+- tests pass
+- production build passes
+- no sibling repo runtime imports
+- no Supabase project/configuration added
+- no secrets
+- reference repositories unchanged
+- Space Wars repo committed
+- pushed to main
+- working tree clean
+
+==================================================
+FINAL RESPONSE
+==================================================
+
+When finished, STOP and report:
+
+1. What you built.
+2. How to run it.
+3. Screenshot-level description of the final dashboard.
+4. Number of generated systems/empires/fleets.
+5. How galaxy generation works.
+6. How territory rendering works.
+7. How pan/zoom works.
+8. How fleet movement works.
+9. How attack/capture works.
+10. How mining works.
+11. How ship construction works.
+12. How fake rival activity works.
+13. Which civilizations/assets were found and used.
+14. Exact assets copied and provenance document.
+15. What remains intentionally fake/local.
+16. Tests/lint/typecheck/build results.
+17. Performance observations.
+18. Known visual shortcomings.
+19. Files/modules most important for future visual iteration.
+20. Commit SHA.
+21. Confirmation reference repos were unchanged.
+22. Confirmation Space Wars working tree is clean.
+
+DO NOT START PHASE 2.
+DO NOT BUILD THE BACKEND.
+DO NOT IMPLEMENT SUPABASE.
+
+Stop after delivering the polished local visual prototype.

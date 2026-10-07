@@ -1,0 +1,208 @@
+﻿{
+    "note":  "Selective unchanged copies for the owner-requested local visual prototype. No reference runtime dependency.",
+    "assets":  [
+                   {
+                       "path":  "public/assets/species_solari.jpg",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/species_solari.jpg",
+                       "purpose":  "portrait",
+                       "sha256":  "ff556688fef97c0832f47d8cc40cba03ba9f04533e410cb82887fd0e4ecd5d41"
+                   },
+                   {
+                       "path":  "public/assets/species_aether_weavers.jpg",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/species_aether_weavers.jpg",
+                       "purpose":  "portrait",
+                       "sha256":  "205a95401162747531c56b8013eb9d3dcfd1e84c68f111bb52c58e5815c496c9"
+                   },
+                   {
+                       "path":  "public/assets/species_zetari.jpg",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/species_zetari.jpg",
+                       "purpose":  "portrait",
+                       "sha256":  "c868e956fdc4eb7707cb9629f6a316d7ec65901310b8088bebf0c216a976e109"
+                   },
+                   {
+                       "path":  "public/assets/species_saurian_remnant.png",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/species_saurian_remnant.png",
+                       "purpose":  "portrait",
+                       "sha256":  "1e05351c70832ac26c2cdd83f61a151c2c94a69ddc063cbaf20dbb27c7f4062d"
+                   },
+                   {
+                       "path":  "public/assets/species_gorgrak_engine_burners.jpg",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/species_gorgrak_engine_burners.jpg",
+                       "purpose":  "portrait",
+                       "sha256":  "fefcd0f827b7ef3f598672995b16709252a9a11b667972c4d4f16b0f42e6fb92"
+                   },
+                   {
+                       "path":  "public/assets/species_glint_tik_collective.jpg",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/species_glint_tik_collective.jpg",
+                       "purpose":  "portrait",
+                       "sha256":  "518872cee2d53f13ed9a535606ee33527be171b0117bae27553420b16cc134f6"
+                   },
+                   {
+                       "path":  "public/assets/species_myrmex_logistics.jpg",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/species_myrmex_logistics.jpg",
+                       "purpose":  "portrait",
+                       "sha256":  "9ec3564c7c1e3a7e6856628ab74331adb20843aff16f7459190db471cf7c18aa"
+                   },
+                   {
+                       "path":  "public/assets/faction_emblem_gorgrak_engine_burners.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/faction_emblem_gorgrak_engine_burners.webp",
+                       "purpose":  "emblem",
+                       "sha256":  "aece868bb5553abcf874b55fe36ceb9e2fc58156beec899da66191efd2852711"
+                   },
+                   {
+                       "path":  "public/assets/faction_emblem_saurian_remnant.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/faction_emblem_saurian_remnant.webp",
+                       "purpose":  "emblem",
+                       "sha256":  "9cf177ac109f71ebb533f44feb222dbb4f136a9da5629a603e20d742a643d4c8"
+                   },
+                   {
+                       "path":  "public/assets/faction_emblem_zetari.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/faction_emblem_zetari.webp",
+                       "purpose":  "emblem",
+                       "sha256":  "714f061d4b93b2dd2d834682d83fa7cb7bf3ffb846e775c5fe9c27690241b10a"
+                   },
+                   {
+                       "path":  "public/assets/faction_emblem_solari.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/faction_emblem_solari.webp",
+                       "purpose":  "emblem",
+                       "sha256":  "73264f23b04ed6c7003b1a6c295892b9ea757e1906adb6c282295abb575c167f"
+                   },
+                   {
+                       "path":  "public/assets/faction_emblem_sylvari_aether_weavers.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/faction_emblem_sylvari_aether_weavers.webp",
+                       "purpose":  "emblem",
+                       "sha256":  "ed9f67dafa8e9530f0554e9bb0fab7735aea2139154cc37cbaeafb3528a58a51"
+                   },
+                   {
+                       "path":  "public/assets/faction_emblem_glint_tik_collective.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/faction_emblem_glint_tik_collective.webp",
+                       "purpose":  "emblem",
+                       "sha256":  "c790bb3fdbd3d18bc13998e8cd95e40ce94c6935a6e083f75cc2d0102e5da1d4"
+                   },
+                   {
+                       "path":  "public/assets/faction_emblem_myrmex_logistics.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/faction_emblem_myrmex_logistics.webp",
+                       "purpose":  "emblem",
+                       "sha256":  "807b8d6c847f37a3f8ae6b5fff8ca4cd6950cd076c43192adcc134386b536131"
+                   },
+                   {
+                       "path":  "public/assets/war2_human_frigate.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/war2_human_frigate.webp",
+                       "purpose":  "ship",
+                       "sha256":  "23accdee4670a0f4fe70d139fe20d6646d9d090ec26cc69cb1386a8a15dfab88"
+                   },
+                   {
+                       "path":  "public/assets/war2_human_cruiser.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/war2_human_cruiser.webp",
+                       "purpose":  "ship",
+                       "sha256":  "966327c50849104f4a086869522786ec4065290cb37b90738a4985b39dd4c2a2"
+                   },
+                   {
+                       "path":  "public/assets/war2_human_dreadnought.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/war2_human_dreadnought.webp",
+                       "purpose":  "ship",
+                       "sha256":  "925b0b285ad738078fc79f1caaacfc802f1d7388318eab97be3b3420237c6827"
+                   },
+                   {
+                       "path":  "public/assets/war2_engine_burner_overburn_destroyer.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/war2_engine_burner_overburn_destroyer.webp",
+                       "purpose":  "ship",
+                       "sha256":  "a6a41dda6ffa23a6d119902b778e76526e0be3da238ad05063f4d2fe550a6520"
+                   },
+                   {
+                       "path":  "public/assets/asteroid_small_01.png",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/asteroid_small_01.png",
+                       "purpose":  "asteroid",
+                       "sha256":  "2e33ad5c82b861a8be05356bca93dd0513756bebc1fbcb23727d3cadea8bc533"
+                   },
+                   {
+                       "path":  "public/assets/asteroid_medium_01.png",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/asteroid_medium_01.png",
+                       "purpose":  "asteroid",
+                       "sha256":  "75885952098ad7ec4f9df850f4692ab36a4c5919afc24c605980986fc200135f"
+                   },
+                   {
+                       "path":  "public/assets/asteroid_large_01.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/asteroid_large_01.webp",
+                       "purpose":  "asteroid",
+                       "sha256":  "cebb7442cd18088c9452e60cbf72d84df1d8a6f68d2568fddd299c261fc36db1"
+                   },
+                   {
+                       "path":  "public/assets/planet_terran_base_01.png",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/planet_terran_base_01.png",
+                       "purpose":  "planet",
+                       "sha256":  "1ff696b811ef60f03064a91fda3b4f2d64d8c5e7aa8343f585446904dcf42dd5"
+                   },
+                   {
+                       "path":  "public/assets/planet_second_earth_base_01.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/planet_second_earth_base_01.webp",
+                       "purpose":  "planet",
+                       "sha256":  "660f3bab5fff3b5994a8a4de853d29a025fa1ff3784a1b03fb0489dcad3a4ffd"
+                   },
+                   {
+                       "path":  "public/assets/planet_ocean_base_01.png",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/planet_ocean_base_01.png",
+                       "purpose":  "planet",
+                       "sha256":  "b8784266fc4f11b5fe3c93f81829fee247625600969869a86cd37a744a70bb0a"
+                   },
+                   {
+                       "path":  "public/assets/planet_desert_base_01.png",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/planet_desert_base_01.png",
+                       "purpose":  "planet",
+                       "sha256":  "6228196d6f3bdd3772f3c8a49a768560c4435791ac398a15de9dcf2f6604117a"
+                   },
+                   {
+                       "path":  "public/assets/planet_frozen_base_01.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/planet_frozen_base_01.webp",
+                       "purpose":  "planet",
+                       "sha256":  "1c41e8a82990d574bff362349be317b24d21fac8806c408d6a898cdc4345e182"
+                   },
+                   {
+                       "path":  "public/assets/planet_volcanic_base_01.webp",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/planet_volcanic_base_01.webp",
+                       "purpose":  "planet",
+                       "sha256":  "1ec32336e548035763afbb8dcb4d1bd7908e5565ff211c5c8167fd8dea6412be"
+                   },
+                   {
+                       "path":  "public/assets/planet_gas_giant_base_01.png",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/planet_gas_giant_base_01.png",
+                       "purpose":  "planet",
+                       "sha256":  "9adc2ee3d7600300b39b405d7f00d9f8abaa3b5f27495559cf6eac333948f600"
+                   },
+                   {
+                       "path":  "public/assets/planet_crystal_world_base_01.png",
+                       "sourceRepository":  "Space Explorer RPG Web",
+                       "sourcePath":  "src/assets/artwork/planet_crystal_world_base_01.png",
+                       "purpose":  "planet",
+                       "sha256":  "8d989a1a947493618c41511dcf29459b4289aa5ae51bfc44ab300a1632369b71"
+                   }
+               ]
+}

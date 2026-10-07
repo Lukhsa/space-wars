@@ -1,0 +1,870 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Crosshair,
+  Minus,
+  Plus,
+  Maximize2,
+  Orbit,
+  Navigation,
+  ScanLine,
+} from "lucide-react";
+import { asset, civilizations, planets, WORLD } from "../demo/catalog";
+import { randomFrom } from "../demo/galaxy";
+import { fleetPosition, moving } from "../demo/simulation";
+import { createCells, territoryPaths } from "../demo/territory";
+import type { DemoState, Filter, Point } from "../demo/types";
+
+interface Props {
+  state: DemoState;
+  selected: number;
+  selectedFleet: number | null;
+  filter: Filter;
+  onSelect: (id: number, asteroid?: boolean) => void;
+  onFleet: (id: number) => void;
+  focus: { id: number; nonce: number; point?: Point };
+  preview: number[];
+  paused: boolean;
+}
+type Camera = Point & { z: number };
+export default function GalaxyMap({
+  state,
+  selected,
+  selectedFleet,
+  filter,
+  onSelect,
+  onFleet,
+  focus,
+  preview,
+  paused,
+}: Props) {
+  const container = useRef<HTMLDivElement>(null),
+    svg = useRef<SVGSVGElement>(null);
+  const worldLayer = useRef<SVGGElement>(null),
+    lastCameraPaint = useRef(0);
+  const [size, setSize] = useState({ width: 1000, height: 740 });
+  const [camera, setCamera] = useState<Camera>({ x: 1420, y: 1150, z: 0.82 });
+  const cameraRef = useRef(camera),
+    target = useRef(camera),
+    frame = useRef(0);
+  const drag = useRef({ active: false, moved: false, x: 0, y: 0 });
+  const [hover, setHover] = useState<number | null>(null),
+    [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const geometry = useMemo(() => createCells(state.systems), [state.seed]); // Geometry is immutable within a seed.
+  const owners = state.systems.map((s) => s.owner ?? "n").join(",");
+  const territories = useMemo(
+    () => territoryPaths(state.systems, geometry),
+    [owners, geometry],
+  );
+  const stars = useMemo(() => {
+    const r = randomFrom("starfield:" + state.seed);
+    return Array.from({ length: 800 }, () => ({
+      x: r() * WORLD.width,
+      y: r() * WORLD.height,
+      r: 0.4 + r() * 1.2,
+      opacity: 0.12 + r() * 0.38,
+    }));
+  }, [state.seed]);
+  const starfield = useMemo(
+    () => (
+      <g>
+        {stars.map((s, i) => (
+          <circle
+            key={i}
+            cx={s.x}
+            cy={s.y}
+            r={s.r}
+            fill="#b4c9d4"
+            opacity={s.opacity}
+          />
+        ))}
+      </g>
+    ),
+    [stars],
+  );
+  const detail = camera.z > 0.95 ? "close" : camera.z > 0.43 ? "medium" : "far";
+  const transformFor = (c: Camera) =>
+    `translate(${size.width / 2} ${size.height / 2}) scale(${c.z}) translate(${-c.x} ${-c.y})`;
+  const paintCamera = (next: Camera, settled = false) => {
+    cameraRef.current = next;
+    // Move the SVG immediately; refresh labels/culling less often than the camera.
+    worldLayer.current?.setAttribute("transform", transformFor(next));
+    const now = performance.now();
+    if (settled || now - lastCameraPaint.current > 100) {
+      setCamera(next);
+      lastCameraPaint.current = now;
+    }
+  };
+  const animate = () => {
+    cancelAnimationFrame(frame.current);
+    const tick = () => {
+      const c = cameraRef.current,
+        t = target.current;
+      const next = {
+        x: c.x + (t.x - c.x) * 0.23,
+        y: c.y + (t.y - c.y) * 0.23,
+        z: c.z + (t.z - c.z) * 0.23,
+      };
+      const unsettled =
+        Math.abs(next.x - t.x) +
+          Math.abs(next.y - t.y) +
+          Math.abs(next.z - t.z) * 100 >
+        0.03;
+      paintCamera(next, !unsettled);
+      if (unsettled) frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+  };
+  const aim = (next: Camera) => {
+    target.current = {
+      x: Math.max(-150, Math.min(WORLD.width + 150, next.x)),
+      y: Math.max(-150, Math.min(WORLD.height + 150, next.y)),
+      z: Math.max(0.22, Math.min(2.5, next.z)),
+    };
+    animate();
+  };
+  const zoom = (factor: number, point?: Point) => {
+    const c = target.current,
+      z = Math.max(0.22, Math.min(2.5, c.z * factor)),
+      p = point ?? { x: size.width / 2, y: size.height / 2 };
+    aim({
+      x: c.x + (p.x - size.width / 2) * (1 / c.z - 1 / z),
+      y: c.y + (p.y - size.height / 2) * (1 / c.z - 1 / z),
+      z,
+    });
+  };
+  useEffect(() => {
+    if (!container.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0].contentRect;
+      setSize({ width: rect.width, height: rect.height });
+    });
+    observer.observe(container.current);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const el = svg.current;
+    if (!el) return;
+    const wheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = el.getBoundingClientRect();
+      zoom(Math.exp(-event.deltaY * 0.0015), {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      });
+    };
+    el.addEventListener("wheel", wheel, { passive: false });
+    return () => el.removeEventListener("wheel", wheel);
+  });
+  useEffect(() => {
+    const s = focus.point ?? state.systems[focus.id];
+    if (s) aim({ x: s.x, y: s.y, z: Math.max(0.8, cameraRef.current.z) });
+  }, [focus.nonce, state.seed]);
+  useEffect(() => () => cancelAnimationFrame(frame.current), []);
+  const color = (owner: number | null) =>
+    owner === null
+      ? "#728596"
+      : civilizations[state.commanders[owner].civilization].color;
+  const emphasized = (id: number) => {
+    const s = state.systems[id];
+    return (
+      filter === "All" ||
+      (filter === "Owned" && s.owner === 0) ||
+      (filter === "Neutral" && s.owner === null) ||
+      (filter === "Hostile" && s.owner !== null && s.owner !== 0) ||
+      (filter === "Asteroids" && s.asteroid) ||
+      (filter === "Fleets" && state.fleets.some((f) => f.system === id))
+    );
+  };
+  const selectedRoutes = state.fleets.filter(
+    (f) => moving(f) && (f.id === selectedFleet || f.owner === 0),
+  );
+  const selectedSystem = state.systems[selected];
+  const fleetSystems =
+    filter === "Fleets" ? state.fleets.map((f) => f.system).join(",") : "";
+  const captureClock = state.systems.some((s) => state.time - s.capturedAt < 4)
+    ? Math.floor(state.time * 10)
+    : 0;
+  // Clock ticks must not reconcile every stationary planet and label.
+  const systemNodes = useMemo(
+    () =>
+      state.systems.map((s) => {
+        const active = s.id === selected,
+          hovered = hover === s.id,
+          important = s.capital || s.owner === 0 || active,
+          r = s.id === 0 ? 26 : s.capital ? 20 : 14;
+        const visible =
+          s.x > camera.x - size.width / camera.z / 2 - 100 &&
+          s.x < camera.x + size.width / camera.z / 2 + 100 &&
+          s.y > camera.y - size.height / camera.z / 2 - 100 &&
+          s.y < camera.y + size.height / camera.z / 2 + 100;
+        if (!visible) return null;
+        const labels =
+          detail === "close" ||
+          (detail === "medium" && (important || s.id < 8 || s.id % 3 === 0)) ||
+          active;
+        return (
+          <g
+            key={s.id}
+            transform={`translate(${s.x} ${s.y})`}
+            opacity={emphasized(s.id) || active ? 1 : 0.2}
+            className={`system ${active ? "selected" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-label={`${s.name}, ${s.owner === 0 ? "owned" : s.owner === null ? "neutral" : "rival"} system`}
+            data-system={s.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!drag.current.moved) onSelect(s.id);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(s.id);
+              }
+            }}
+            onPointerEnter={() => {
+              if (!drag.current.active) setHover(s.id);
+            }}
+            onPointerLeave={() => setHover(null)}
+          >
+            <circle r={r + 15} fill="transparent" />
+            {(active || hovered || s.id === 0) && (
+              <circle r={r * 2.5} fill="url(#sunGlow)" />
+            )}
+            {active && (
+              <>
+                <circle
+                  r={r + 13}
+                  className="selection-ring"
+                  fill="none"
+                  stroke="#bcdce2"
+                  strokeWidth="1"
+                  strokeDasharray="28 7"
+                />
+                <circle
+                  r={r + 18}
+                  fill="none"
+                  stroke="#87c9d4"
+                  strokeOpacity=".16"
+                  strokeWidth="1"
+                />
+                <path
+                  d={`M-${r + 24} 0h5M${r + 19} 0h5M0 -${r + 24}v5M0 ${r + 19}v5`}
+                  stroke="#c6e5e8"
+                />
+              </>
+            )}
+            {state.time - s.capturedAt < 4 && (
+              <circle
+                r={r + 25 + (state.time - s.capturedAt) * 18}
+                fill="none"
+                stroke="#b5ded7"
+                strokeWidth="2"
+                opacity={Math.max(0, 1 - (state.time - s.capturedAt) / 4)}
+              />
+            )}
+            <circle
+              r={r + 3}
+              fill="#0b1119"
+              stroke={color(s.owner)}
+              strokeWidth={s.capital ? 1.4 : 1}
+              strokeOpacity=".7"
+            />
+            {detail !== "far" || important ? (
+              <image
+                href={asset(planets[s.planet])}
+                x={-r}
+                y={-r}
+                width={r * 2}
+                height={r * 2}
+                className="planet-map"
+              />
+            ) : (
+              <circle r="5" fill={color(s.owner)} />
+            )}
+            {s.capital && (
+              <path
+                d={`M-4 -${r + 10}l4-4 4 4-4 4z`}
+                fill={s.owner === 0 ? "#e0c08c" : color(s.owner)}
+              />
+            )}
+            {s.asteroid && detail !== "far" && (
+              <g
+                role="button"
+                aria-label={`${s.name} asteroid field`}
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!drag.current.moved) onSelect(s.id, true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.stopPropagation();
+                    onSelect(s.id, true);
+                  }
+                }}
+              >
+                <ellipse
+                  cx="0"
+                  cy="0"
+                  rx={r + 26}
+                  ry={r + 10}
+                  transform="rotate(-28)"
+                  fill="none"
+                  stroke="#aaa796"
+                  strokeWidth="3"
+                  strokeDasharray="1 8"
+                  strokeOpacity=".28"
+                />
+                <image
+                  href={asset(
+                    s.id % 2
+                      ? "asteroid_medium_01.png"
+                      : "asteroid_small_01.png",
+                  )}
+                  x={r + 9}
+                  y="-14"
+                  width="22"
+                  height="22"
+                />
+                {detail === "close" && (
+                  <text x={r + 19} y="-21" className="asteroid-label">
+                    ALLOY
+                  </text>
+                )}
+              </g>
+            )}
+            {labels && (
+              <>
+                <text
+                  y={r + 29}
+                  textAnchor="middle"
+                  className={`system-label ${s.owner === 0 ? "owned-label" : ""}`}
+                >
+                  {s.name}
+                </text>
+                {(active || s.id === 0 || detail === "close") && (
+                  <text
+                    y={r + 44}
+                    textAnchor="middle"
+                    className="system-subtitle"
+                    fill={color(s.owner)}
+                  >
+                    {s.id === 0
+                      ? "HOMEWORLD"
+                      : s.owner === 0
+                        ? "VALE EXPANSE"
+                        : s.owner === null
+                          ? "UNCLAIMED"
+                          : state.commanders[s.owner].name.toUpperCase()}
+                  </text>
+                )}
+              </>
+            )}
+          </g>
+        );
+      }),
+    [
+      state.systems,
+      state.commanders,
+      selected,
+      hover,
+      filter,
+      fleetSystems,
+      captureClock,
+      camera,
+      size,
+      detail,
+      onSelect,
+    ],
+  );
+
+  return (
+    <div
+      ref={container}
+      className={`galaxy-stage ${paused ? "is-paused" : ""}`}
+    >
+      <div className="map-atmosphere" />
+      <svg
+        ref={svg}
+        className="galaxy-svg"
+        role="application"
+        aria-label="Interactive galaxy map. Drag to pan, scroll to zoom. Use Home to focus your homeworld."
+        viewBox={`0 0 ${size.width} ${size.height}`}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === "Home") {
+            aim({ ...state.systems[0], z: 0.82 });
+            e.preventDefault();
+          }
+          if (
+            ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)
+          ) {
+            const c = target.current;
+            aim({
+              ...c,
+              x:
+                c.x +
+                (e.key === "ArrowLeft"
+                  ? -100
+                  : e.key === "ArrowRight"
+                    ? 100
+                    : 0) /
+                  c.z,
+              y:
+                c.y +
+                (e.key === "ArrowUp" ? -100 : e.key === "ArrowDown" ? 100 : 0) /
+                  c.z,
+            });
+            e.preventDefault();
+          }
+          if (e.key === "+" || e.key === "=") zoom(1.25);
+          if (e.key === "-") zoom(0.8);
+        }}
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          drag.current = {
+            active: true,
+            moved: false,
+            x: e.clientX,
+            y: e.clientY,
+          };
+        }}
+        onPointerMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          if (!drag.current.active && hover !== null)
+            setMouse({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+          if (!drag.current.active) return;
+          const dx = e.clientX - drag.current.x,
+            dy = e.clientY - drag.current.y;
+          if (Math.abs(dx) + Math.abs(dy) > 3) drag.current.moved = true;
+          if (drag.current.moved) {
+            svg.current?.setPointerCapture(e.pointerId);
+            cancelAnimationFrame(frame.current);
+            const c = cameraRef.current;
+            const next = {
+              ...c,
+              x: Math.max(-150, Math.min(WORLD.width + 150, c.x - dx / c.z)),
+              y: Math.max(-150, Math.min(WORLD.height + 150, c.y - dy / c.z)),
+            };
+            target.current = next;
+            paintCamera(next);
+            setHover(null);
+            drag.current.x = e.clientX;
+            drag.current.y = e.clientY;
+          }
+        }}
+        onPointerUp={(e) => {
+          drag.current.active = false;
+          if (drag.current.moved) paintCamera(cameraRef.current, true);
+          if (svg.current?.hasPointerCapture(e.pointerId))
+            svg.current.releasePointerCapture(e.pointerId);
+        }}
+        onPointerCancel={() => {
+          drag.current.active = false;
+        }}
+        onPointerLeave={() => setHover(null)}
+      >
+        <defs>
+          <radialGradient id="nebulaBlue">
+            <stop stopColor="#315c6d" stopOpacity=".2" />
+            <stop offset="1" stopColor="#152b39" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="nebulaRust">
+            <stop stopColor="#674838" stopOpacity=".16" />
+            <stop offset="1" stopColor="#674838" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="sunGlow">
+            <stop stopColor="#a0dfef" stopOpacity=".3" />
+            <stop offset="1" stopColor="#63abc6" stopOpacity="0" />
+          </radialGradient>
+          <pattern
+            id="map-grid"
+            width="240"
+            height="240"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M240 0H0V240"
+              fill="none"
+              stroke="#7896a0"
+              strokeOpacity=".04"
+              strokeWidth="1"
+            />
+            <path
+              d="M0 6V0H6"
+              fill="none"
+              stroke="#7a9aac"
+              strokeOpacity=".2"
+              strokeWidth="1"
+            />
+          </pattern>
+          <pattern
+            id="contested"
+            width="10"
+            height="10"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(30)"
+          >
+            <line
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="10"
+              stroke="#d2b079"
+              strokeOpacity=".045"
+              strokeWidth="3"
+            />
+          </pattern>
+          <marker
+            id="route-arrow"
+            markerWidth="7"
+            markerHeight="7"
+            refX="5"
+            refY="3.5"
+            orient="auto"
+          >
+            <path
+              d="m0 0 6 3.5L0 7"
+              fill="none"
+              stroke="#b4e5e9"
+              strokeWidth="1"
+            />
+          </marker>
+        </defs>
+        <g ref={worldLayer} transform={transformFor(cameraRef.current)}>
+          <rect
+            x="-1000"
+            y="-1000"
+            width="5200"
+            height="4300"
+            fill="url(#map-grid)"
+          />
+          <ellipse
+            cx="1450"
+            cy="1150"
+            rx="1300"
+            ry="440"
+            fill="url(#nebulaBlue)"
+            transform="rotate(-25 1450 1150)"
+          />
+          <ellipse
+            cx="2200"
+            cy="720"
+            rx="800"
+            ry="650"
+            fill="url(#nebulaRust)"
+          />
+          {starfield}
+          <text className="space-region" x="2100" y="350">
+            THE CINDER REACH
+          </text>
+          <text className="space-region" x="650" y="1710">
+            VEIL OF PERSEUS
+          </text>
+          <text className="space-region" x="2350" y="1680">
+            OUTER FRONTIER
+          </text>
+          <g className="territories">
+            {territories.map((t) => (
+              <g key={t.owner} data-territory={t.owner}>
+                <path
+                  d={t.path}
+                  fill={color(t.owner)}
+                  fillOpacity={
+                    t.owner === 0 ? 0.11 : detail === "far" ? 0.1 : 0.045
+                  }
+                  stroke={color(t.owner)}
+                  strokeWidth={t.owner === 0 ? 1.8 : 1.1}
+                  strokeOpacity={t.owner === 0 ? 0.75 : 0.36}
+                  strokeLinejoin="round"
+                />
+                {t.owner === 0 && (
+                  <path
+                    d={t.path}
+                    fill="url(#contested)"
+                    stroke={color(0)}
+                    strokeWidth="7"
+                    strokeOpacity=".045"
+                  />
+                )}
+                {detail === "far" && (
+                  <text
+                    x={t.center.x}
+                    y={t.center.y - 32}
+                    fill={color(t.owner)}
+                    className="empire-label"
+                    style={{
+                      fontSize: Math.min(34, 9 / camera.z),
+                      letterSpacing: 1.5,
+                    }}
+                    textAnchor="middle"
+                  >
+                    {t.owner === 0
+                      ? "VALE EXPANSE"
+                      : state.commanders[t.owner].name.toUpperCase()}
+                  </text>
+                )}
+              </g>
+            ))}
+          </g>
+          <g className="travel-lanes">
+            {state.lanes.map((l) => (
+              <line
+                key={`${l.a}-${l.b}`}
+                x1={state.systems[l.a].x}
+                y1={state.systems[l.a].y}
+                x2={state.systems[l.b].x}
+                y2={state.systems[l.b].y}
+                stroke={
+                  l.a === selected || l.b === selected ? "#95c4d0" : "#8293a1"
+                }
+                strokeWidth={l.a === selected || l.b === selected ? 1.3 : 0.8}
+                strokeOpacity={
+                  l.a === selected || l.b === selected ? 0.4 : 0.16
+                }
+              />
+            ))}
+          </g>
+          {selectedRoutes.map((f) => (
+            <polyline
+              key={f.id}
+              points={f.route
+                .map((id) => `${state.systems[id].x},${state.systems[id].y}`)
+                .join(" ")}
+              className="fleet-route"
+              fill="none"
+              stroke={f.mission === "attack" ? "#d7a677" : "#8bcbd4"}
+              strokeWidth={f.id === selectedFleet ? 2.3 : 1.2}
+              strokeOpacity={f.id === selectedFleet ? 0.8 : 0.45}
+              strokeDasharray="5 7"
+              markerEnd="url(#route-arrow)"
+            />
+          ))}
+          {preview.length > 1 && (
+            <polyline
+              points={preview
+                .map((id) => `${state.systems[id].x},${state.systems[id].y}`)
+                .join(" ")}
+              className="route-preview"
+              fill="none"
+              stroke="#e2c38a"
+              strokeWidth="2"
+              strokeDasharray="3 6"
+              markerEnd="url(#route-arrow)"
+            />
+          )}
+          {systemNodes}
+          {state.fleets.map((f) => {
+            if (detail === "far" && f.owner !== 0) return null;
+            const p = fleetPosition(state, f),
+              selectedF = f.id === selectedFleet,
+              isMoving = moving(f),
+              offset = isMoving ? 0 : 32;
+            return (
+              <g
+                key={f.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`${f.name} fleet`}
+                className={`fleet-marker ${selectedF ? "active" : ""}`}
+                style={{
+                  transform: `translate(${p.x + offset}px, ${p.y - (!isMoving ? 30 : 0)}px)`,
+                  transition: paused ? "none" : "transform 210ms linear",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!drag.current.moved) onFleet(f.id);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onFleet(f.id);
+                }}
+              >
+                <circle r="16" fill="transparent" />
+                {selectedF && (
+                  <circle
+                    r="16"
+                    fill="#0b1820"
+                    stroke="#a5d9e1"
+                    strokeOpacity=".8"
+                    strokeWidth="1"
+                  />
+                )}
+                {isMoving && (
+                  <path
+                    d={`M-5 0h-22`}
+                    stroke={color(f.owner)}
+                    strokeWidth="2"
+                    opacity=".3"
+                    transform={`rotate(${p.angle})`}
+                  />
+                )}
+                <path
+                  d="m-5-5 13 5-13 5 3-5z"
+                  fill={color(f.owner)}
+                  stroke="#08111b"
+                  strokeWidth="1"
+                  transform={`rotate(${isMoving ? p.angle : -45})`}
+                />
+                {f.status === "Mining" && (
+                  <circle
+                    r="13"
+                    fill="none"
+                    stroke="#d1b878"
+                    strokeWidth="1.6"
+                    strokeDasharray={`${(f.miningElapsed / 18) * 81} 81`}
+                    transform="rotate(-90)"
+                  />
+                )}
+                {(selectedF || (detail === "close" && f.owner === 0)) && (
+                  <text x="19" y="-10" className="fleet-label">
+                    {f.name}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+      <div className="map-coordinate">
+        <span>ORION EXPANSE</span>
+        <i /> SECTOR 07{" "}
+        <span className="coordinate-value">
+          {Math.round(camera.x)} : {Math.round(camera.y)}
+        </span>
+      </div>
+      <div className="map-legend">
+        <span>
+          <i className="legend-dot owned" />
+          Your territory
+        </span>
+        <span>
+          <i className="legend-dot rival" />
+          Rival empire
+        </span>
+        <span>
+          <i className="legend-dot neutral" />
+          Neutral frontier
+        </span>
+      </div>
+      <div className="map-tools">
+        <button aria-label="Zoom in" title="Zoom in" onClick={() => zoom(1.3)}>
+          <Plus size={16} />
+        </button>
+        <span>{Math.round(camera.z * 100)}%</span>
+        <button
+          aria-label="Zoom out"
+          title="Zoom out"
+          onClick={() => zoom(1 / 1.3)}
+        >
+          <Minus size={16} />
+        </button>
+        <div />
+        <button
+          aria-label="Focus homeworld"
+          title="Homeworld · Home"
+          onClick={() => aim({ ...state.systems[0], z: 0.82 })}
+        >
+          <Crosshair size={17} />
+        </button>
+        <button
+          aria-label="View entire galaxy"
+          title="Entire galaxy"
+          onClick={() =>
+            aim({
+              x: 1600,
+              y: 1150,
+              z: Math.min(size.width / 3400, size.height / 2450),
+            })
+          }
+        >
+          <Maximize2 size={16} />
+        </button>
+      </div>
+      <div className="map-help">
+        <Navigation size={11} /> DRAG TO EXPLORE <span>·</span> SCROLL TO ZOOM
+      </div>
+      <div className="minimap">
+        <div>
+          <ScanLine size={12} />
+          <span>GALAXY OVERVIEW</span>
+          <small>{state.systems.length} SYSTEMS</small>
+        </div>
+        <svg
+          viewBox={`0 0 ${WORLD.width} ${WORLD.height}`}
+          aria-label="Galaxy minimap"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") aim({ x: 1600, y: 1150, z: 0.3 });
+          }}
+          onClick={(e) => {
+            const matrix = e.currentTarget.getScreenCTM();
+            if (matrix) {
+              const point = new DOMPoint(e.clientX, e.clientY).matrixTransform(
+                matrix.inverse(),
+              );
+              aim({ x: point.x, y: point.y, z: camera.z });
+            }
+          }}
+        >
+          {territories.map((t) => (
+            <path
+              key={t.owner}
+              d={t.path}
+              fill={color(t.owner)}
+              fillOpacity={t.owner === 0 ? 0.55 : 0.22}
+            />
+          ))}
+          {state.systems
+            .filter((s) => s.capital)
+            .map((s) => (
+              <circle
+                key={s.id}
+                cx={s.x}
+                cy={s.y}
+                r="10"
+                fill={color(s.owner)}
+              />
+            ))}
+          <rect
+            x={camera.x - size.width / camera.z / 2}
+            y={camera.y - size.height / camera.z / 2}
+            width={size.width / camera.z}
+            height={size.height / camera.z}
+            fill="#93c6d6"
+            fillOpacity=".035"
+            stroke="#b3d9e3"
+            strokeWidth="9"
+          />
+        </svg>
+      </div>
+      {hover !== null && !drag.current.active && (
+        <div
+          className="map-tooltip"
+          style={{
+            left: Math.min(size.width - 215, Math.max(8, mouse.x + 20)),
+            top: Math.min(size.height - 95, Math.max(8, mouse.y + 15)),
+          }}
+        >
+          <Orbit size={16} />
+          <div>
+            <strong>{state.systems[hover].name}</strong>
+            <span>
+              {state.systems[hover].owner === null
+                ? "Neutral frontier"
+                : state.commanders[state.systems[hover].owner!].name}
+            </span>
+            <small>
+              {state.systems[hover].asteroid
+                ? "Asteroid field · Alloy deposits"
+                : "Click to inspect system"}
+            </small>
+          </div>
+        </div>
+      )}
+      <span className="sr-only">Selected system: {selectedSystem.name}</span>
+    </div>
+  );
+}
