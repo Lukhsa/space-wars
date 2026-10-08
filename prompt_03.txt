@@ -1,0 +1,1028 @@
+# SPACE WARS — Economy Rebalancing, Planetary Defenses & Gameplay Improvements
+
+## Mission
+
+We have completed the initial Space Wars Quick Conquest prototype and are preparing it for serious human playtesting.
+
+This task is a **gameplay balancing and planetary-defense implementation pass**.
+
+The owner wants:
+
+1. Mining to become strategically important rather than optional.
+2. A better-balanced economy, fleet progression and match pace.
+3. Orbital Defense Stations and Planetary Railgun Batteries, using our existing Space Explorer assets and gameplay concepts.
+4. The ability to construct and upgrade planetary defenses.
+5. Both defensive structures already installed on every starting homeworld.
+6. Improved bot behavior that understands mining, defense investment and territorial control.
+7. Comprehensive simulated testing before the owner plays.
+
+**Implement these changes. Do not stop after producing recommendations.**
+
+Preserve the existing dashboard and recent visual improvements.
+
+---
+
+## 1. Existing project and safety
+
+Writable repository:
+
+`Lukhsa/space-wars`
+
+Read-only references:
+
+- `Lukhsa/Space-Explorer-Web`
+- `Lukhsa/space-explorer-backend`
+- Android Space Commute RPG if available
+
+Read `AGENTS.md`, the gameplay documentation, and any existing gameplay QA/stabilization reports.
+
+Inspect the latest LOCAL working tree before changing anything. Recent UI changes or QA work may not yet be committed to GitHub.
+
+Do not overwrite, reset, discard or revert existing work.
+
+Only modify Space Wars.
+
+This remains a local-only prototype.
+
+Do not introduce Supabase, real multiplayer, authentication, dedicated servers or production deployment systems.
+
+---
+
+# PART A — ECONOMY REBALANCING
+
+## 2. Mining must matter
+
+Currently mining is not important enough.
+
+The current balance includes approximately:
+
+- Homeworld: 240 Alloy/min passive
+- Frontier: 55 Alloy/min passive
+- Middle: 90 Alloy/min passive
+- Core: 100 Alloy/min passive
+- Mining: 200 Alloy per 40-second cycle
+
+This can produce enough passive Alloy to support substantial shipbuilding without meaningful mining.
+
+We want to change this.
+
+### Design objective
+
+**Players should be able to start playing and build a few ships without mining, but sustained military expansion should require active asteroid extraction and control of resource-producing territory.**
+
+A player who never mines should eventually be limited by Alloy.
+
+A player who secures mining operations should be able to:
+
+- rebuild losses faster
+- afford heavier ships earlier
+- invest in planetary defenses
+- maintain military pressure
+
+Mining should be a genuine strategic advantage.
+
+However, do not make it impossible for a defeated player to recover.
+
+Protected homeworld income must still support modest rebuilding.
+
+### Required work
+
+Review and rebalance:
+
+- homeworld passive income
+- frontier income
+- middle-system income
+- core income
+- asteroid mining output
+- mining cycle durations
+- ship costs
+- defensive structure costs
+- income bonuses
+- pirate salvage
+- recovery assistance
+
+Keep Credits, Alloy and Fuel as our only three resources.
+
+Do not create additional resources.
+
+### Economy target
+
+For an actively expanding commander, aim for mining to provide a meaningful proportion of their available shipbuilding Alloy.
+
+An initial testing target could be approximately **30–50% of acquired Alloy coming from extraction** for commanders actively pursuing mining.
+
+This is a tuning target, not a guaranteed percentage for every strategy.
+
+Passive production should support survival and basic activity.
+
+Mining should support sustained military competitiveness.
+
+Do not force everyone into exactly the same mining strategy.
+
+---
+
+## 3. Improve mining interaction
+
+We do not want to solve the mining problem by creating excessive clicking.
+
+The game is fast-paced but not meant to be an APM-intensive RTS.
+
+Review the current mining interaction.
+
+Currently, a mining expedition completes one cycle and becomes idle.
+
+Consider implementing:
+
+**Automatic repeat mining**
+
+When issuing a mining command, the player can choose:
+
+- Mine once
+- Continue mining
+
+Continue Mining should automatically repeat extraction while:
+
+- the fleet remains at the asteroid field
+- the owner still controls the system
+- the fleet is not in combat
+- mining is legal
+- applicable capacity/rules permit it
+
+The player should be able to cancel the order.
+
+Mining should stop or suspend appropriately when attacked.
+
+Show:
+
+- active mining fleet
+- extraction progress
+- resource yield
+- cycle duration
+- ongoing mining status
+
+If unlimited mining creates an economic exploit, introduce a simple bounded mechanism such as extraction capacity, diminishing returns, or finite reserves with limited regeneration.
+
+Do not add a complicated depletion economy unless testing demonstrates it is needed.
+
+### Important
+
+Players should have reasons to fight over valuable asteroid fields.
+
+Not all fields need to produce exactly the same amount.
+
+Introduce modest variation in:
+
+- richness
+- extraction value
+- location
+- strategic importance
+
+The galaxy generator should distribute those opportunities fairly.
+
+---
+
+## 4. Rebalance Fuel
+
+Previous simulations showed that Fuel tends to accumulate in large quantities while Alloy remains restrictive.
+
+Investigate whether Fuel has sufficient economic purpose.
+
+Review:
+
+- movement costs
+- mining rewards
+- passive generation
+- fleet size versus Fuel consumption
+- retreat costs
+- long-distance expeditions
+
+Fuel should matter when committing fleets to distant operations, but it should not constantly prevent players from participating.
+
+Avoid a situation where a commander has powerful fleets but cannot perform any meaningful action because they are permanently Fuel-starved.
+
+Prefer understandable operating costs over additional resource sinks that exist solely to remove excess currency.
+
+---
+
+## 5. Review ship progression
+
+Review the four existing classes:
+
+- Frigate
+- Destroyer
+- Cruiser
+- Dreadnought
+
+Assess whether:
+
+- Frigates are too cost-effective.
+- Destroyers have a clear purpose.
+- Cruisers justify their cost.
+- Dreadnoughts are achievable within a 40-minute match.
+- Players naturally diversify fleets.
+- Bots understand when to save for stronger ships.
+- Early heavy-ship rushes become too powerful.
+- Losing expensive ships creates meaningful consequences.
+
+Do not radically redesign the entire combat system.
+
+Use the existing local combat resolver.
+
+Make justified balance adjustments and test them.
+
+---
+
+# PART B — PLANETARY DEFENSE SYSTEM
+
+## 6. Add orbital stations and railgun batteries
+
+We already created these concepts and assets for Space Explorer.
+
+Inspect the current reference implementation and artwork.
+
+Verified Web artwork paths:
+
+`src/assets/artwork/colony_orbital_defense_station_01.webp`
+
+`src/assets/artwork/colony_planetary_railgun_battery_01.webp`
+
+Search the reference project for the associated defense rules and current implementation.
+
+Reuse the existing artwork.
+
+Adapt relevant concepts and mechanics where appropriate.
+
+Do not blindly import the original balancing, because Space Explorer and Space Wars have different pacing.
+
+Do not modify the reference projects.
+
+Copy the necessary artwork into Space Wars and update asset provenance.
+
+---
+
+## 7. Defense model
+
+Space Wars currently has star systems containing multiple planets.
+
+Ownership is handled at the STAR SYSTEM level.
+
+We are not implementing individual planet conquest in this update.
+
+However, defensive structures should belong to individual planets.
+
+Each owned planet can support:
+
+**One Orbital Defense Station**
+
+and
+
+**One Planetary Railgun Battery**
+
+Both can exist simultaneously.
+
+Each structure has its own upgrade level.
+
+Initial maximum:
+
+**Level 3**
+
+A planet with no defensive structures can build either or both.
+
+Do not allow unlimited stacking of identical structures on one planet.
+
+### Important balance restriction
+
+Because systems contain multiple planets, a system may eventually contain several defensive installations.
+
+Do not make defensive strength scale so aggressively that a three-planet system with upgraded structures becomes practically unconquerable.
+
+Introduce sensible contribution limits or escalating costs where necessary.
+
+Use the simulator to determine reasonable values.
+
+---
+
+## 8. Orbital Defense Station
+
+This should be the main general-purpose defensive installation.
+
+Suggested role:
+
+- substantial durability
+- balanced defensive weapons
+- efficient against small and medium ships
+- some point-defense/interception capability if the existing resolver supports an appropriate simplified mechanic
+- helps protect the system when the owner has no fleet present
+
+The station should participate automatically when an enemy attacks its star system.
+
+It is stationary.
+
+It cannot be assigned to fleets.
+
+It cannot travel.
+
+### Upgrade levels
+
+Level 1:
+
+Basic orbital protection.
+
+Level 2:
+
+Improved durability and firepower.
+
+Level 3:
+
+Powerful defensive station.
+
+Higher levels should provide visible improvements without becoming disproportionately efficient compared with building ships.
+
+---
+
+## 9. Planetary Railgun Battery
+
+This should be a different defensive specialization.
+
+Suggested role:
+
+- powerful long-range anti-ship weapon
+- especially useful against Cruisers and Dreadnoughts
+- slower firing rate
+- weaker against swarms of small ships
+- less durable than an orbital station
+- substantial damage when left uncontested
+
+The railgun should provide a meaningful reason to mix fleets.
+
+For example, attacking a heavily fortified system with only Dreadnoughts should not always be optimal.
+
+Frigates and Destroyers should retain some tactical usefulness.
+
+### Upgrade levels
+
+Level 1:
+
+Basic planetary anti-ship battery.
+
+Level 2:
+
+Improved damage and targeting.
+
+Level 3:
+
+Heavy strategic railgun capable of seriously threatening capital ships.
+
+Do not give it absurd one-shot damage that makes siege impossible.
+
+---
+
+## 10. Starting homeworld defenses
+
+Every commander begins with a protected homeworld.
+
+At the beginning of every match, automatically place:
+
+**Orbital Defense Station — Level 1**
+
+**Planetary Railgun Battery — Level 1**
+
+on that commander's primary home planet.
+
+These starting structures are free and included in the standard starting package.
+
+All eight commanders receive identical starting defensive capabilities.
+
+Home systems remain non-capturable and non-attackable under the current prototype rules.
+
+The defenses should still be visible so players understand the system and can inspect them.
+
+Do not mistakenly use homeworld defenses to permit attacks on otherwise protected homes.
+
+If future homeworld raids are introduced, these structures can become functional there.
+
+For now, the free home defenses mainly establish the feature and provide a consistent starting state.
+
+---
+
+## 11. Defensive construction
+
+Players should be able to construct defenses on planets belonging to star systems they control.
+
+Suggested interaction:
+
+Select owned star system.
+
+Select planet.
+
+Open:
+
+**PLANETARY DEFENSES**
+
+Display:
+
+Orbital Defense Station
+
+- current level
+- current hull/condition
+- next upgrade
+- cost
+- construction time
+- defensive role
+
+Planetary Railgun Battery
+
+- same relevant information
+
+Possible actions:
+
+- Build
+- Upgrade
+- Repair
+
+Use the existing artwork.
+
+Make the interface consistent with the current Space Wars visual design.
+
+Do not introduce an entirely new navigation system.
+
+Prefer a compact panel or expandable section within the existing system inspector.
+
+---
+
+## 12. Construction times and costs
+
+Defenses are a strategic investment.
+
+They must consume resources.
+
+Use:
+
+- Credits
+- Alloy
+
+Fuel generally should not be required to construct a stationary defense.
+
+Suggested prototype philosophy:
+
+Level 1:
+
+Affordable in the early-to-mid game.
+
+Level 2:
+
+Meaningful investment.
+
+Level 3:
+
+Expensive and most appropriate for strategic/core/frontier strongholds.
+
+Construction should take time.
+
+Do not allow instantaneous defensive structures to appear during an active battle.
+
+Examples of starting timing ranges for simulation:
+
+Orbital Station Level 1:
+45–75 seconds
+
+Orbital Station Level 2:
+75–110 seconds
+
+Orbital Station Level 3:
+110–160 seconds
+
+Railgun Level 1:
+35–60 seconds
+
+Railgun Level 2:
+60–100 seconds
+
+Railgun Level 3:
+100–150 seconds
+
+These are initial tuning ranges.
+
+Choose final prototype values based on economic simulation.
+
+The system should have bounded construction capacity so players cannot instantly upgrade every structure everywhere.
+
+Avoid making defensive construction so expensive that no bot/player ever uses it.
+
+---
+
+## 13. Defense in combat
+
+Defenses must participate in actual battles.
+
+Do not implement them as decorative defense-power numbers that never affect the outcome.
+
+When an enemy fleet attacks a fortified system:
+
+Defending forces should include:
+
+- stationed defending fleets
+- operational orbital stations
+- operational railgun batteries
+
+Use the existing local combat tick system or a compatible extension.
+
+### Combat behavior
+
+Orbital Stations:
+
+- use their own hull and damage characteristics
+- attack eligible enemies
+- can be targeted and destroyed
+
+Railgun Batteries:
+
+- fire at suitable enemy ships
+- have a slower firing cadence
+- favor larger targets
+- can be targeted and destroyed
+
+Attackers should be able to target or destroy defenses.
+
+Focus-fire and stance interactions should remain sensible.
+
+Defensive structures should not count toward mobile fleet limits.
+
+### Capture
+
+An attacker cannot capture a system while active hostile defenses remain operational.
+
+Winning the space battle should allow the attacker to clear remaining defenses through the same combat system.
+
+Only after defenders have been overcome can the normal capture timer begin.
+
+Do not create an unwinnable stalemate where the attacker has defeated the fleet but cannot interact with a remaining station.
+
+---
+
+## 14. Damage, destruction and repair
+
+Defensive installations should have a meaningful lifecycle.
+
+Possible states:
+
+- Not built
+- Constructing
+- Operational
+- Damaged
+- Destroyed
+- Repairing
+- Upgrading
+
+If a defense survives an attack with damage, it should remain damaged.
+
+It should not instantly heal fully.
+
+Allow repair using a modest resource cost and construction time.
+
+Prevent upgrades/repairs from instantly completing during battle.
+
+Destroyed installations should need reconstruction or a justified repair rule.
+
+### Ownership changes
+
+When a system is captured, its previous owner's defenses must not automatically become free fully operational defenses for the attacker.
+
+For this prototype, prefer destroyed/disabled hostile defenses becoming ruins or empty slots after capture, with any salvage carefully bounded.
+
+Clearly define this rule.
+
+No duplicate rewards or exploitable ownership-flip rebuilding.
+
+---
+
+## 15. Defensive artwork and map feedback
+
+Use the existing Orbital Station and Railgun artwork.
+
+Planetary defenses should be identifiable in the UI.
+
+When zoomed in enough, consider adding small structure indicators near the defended planet.
+
+Do not clutter the galaxy map with giant station artwork on every planet.
+
+Suggested visual treatment:
+
+- Orbital station icon
+- Railgun icon
+- Level I / II / III
+- Construction progress
+- Condition indicator
+- Under-attack highlight
+
+When an enemy attacks a fortified system, players should be able to tell that stationary defenses are participating.
+
+Avoid creating a separate battle screen.
+
+All battles remain on the strategic galaxy map.
+
+---
+
+# PART C — BOT STRATEGY
+
+## 16. Teach bots to mine properly
+
+Bots currently appear to undervalue mining.
+
+Investigate their existing utility logic.
+
+Bots must understand that Alloy is necessary for sustained military production.
+
+Their mining decisions should account for:
+
+- current Alloy reserves
+- expected production spending
+- pending ship construction
+- nearby asteroid opportunities
+- mining output
+- travel time
+- enemy danger
+- alternative expansion opportunities
+
+An Industrialist should mine more often.
+
+However, other personalities should still mine when their economies require it.
+
+Do not simply force each bot to mine on a fixed timer.
+
+Mining should be a rational economic decision.
+
+If automatic mining is implemented, bots should use it appropriately.
+
+---
+
+## 17. Teach bots to build defenses
+
+Bots must be able to:
+
+- build orbital stations
+- build railgun batteries
+- upgrade structures
+- repair damaged structures
+- choose appropriate planets/systems
+- avoid over-investing
+
+Personality should matter.
+
+### Turtle
+
+Strong preference for defending valuable systems.
+
+### Industrialist
+
+Defends valuable mining sites and resource infrastructure.
+
+### Expansionist
+
+Builds modest defenses to secure newly conquered territory.
+
+### Aggressor
+
+Spends more on fleets, fewer defensive investments.
+
+### Opportunist
+
+Fortifies useful objectives and chokepoints.
+
+These are tendencies, not absolute rules.
+
+A bot should not build defenses on a system it expects to lose immediately.
+
+A bot should not construct maximum-level defenses on every planet while neglecting fleet production.
+
+---
+
+## 18. Strategic positioning
+
+The AI should understand the difference between:
+
+- safe interior systems
+- exposed border systems
+- strategic systems
+- resource systems
+- major objectives
+
+Defenses should matter more at:
+
+- contested borders
+- chokepoints
+- valuable asteroid systems
+- Core systems
+- strategic bonus systems
+
+Bots should recognize difficult fortified targets and adjust their strategy.
+
+Possible responses:
+
+- bring larger fleet
+- attack elsewhere
+- reinforce
+- delay attack until stronger
+- retreat when losing
+
+Avoid repeatedly sacrificing tiny fleets against a powerful railgun battery.
+
+---
+
+# PART D — GENERAL BALANCING
+
+## 19. Run comprehensive simulations
+
+Before changing balance values, record the current baseline.
+
+Use the existing headless simulator.
+
+Then make changes and compare results.
+
+Run at least 30 complete seeded eight-bot matches if computationally practical, preferably more.
+
+Use multiple seeds and varying personality/spawn combinations.
+
+Do not evaluate balance from only one match.
+
+Track:
+
+- match winners
+- Dominion Score
+- ships built
+- ship classes used
+- ships destroyed
+- resources produced
+- resources spent
+- resources remaining
+- passive Alloy vs mined Alloy
+- Fuel usage
+- mining fleet utilization
+- territory captures
+- repeated ownership changes
+- defensive structures built
+- defensive structures upgraded
+- defensive structures destroyed
+- repair costs
+- combat outcomes involving defenses
+- comeback frequency
+- Guardian kills
+- Leviathan kills
+- domination victories
+- match completion
+
+Include reports for both balance and correctness.
+
+---
+
+## 20. Balance objectives
+
+Try to achieve the following:
+
+**Mining matters.**
+
+A commander that completely ignores mining should usually have weaker sustained production than an otherwise comparable commander that mines effectively.
+
+**Defenses matter.**
+
+A defended border system should require a meaningful additional attacking commitment.
+
+**Defenses are not unbeatable.**
+
+Players should be able to defeat fortified systems using appropriate fleets.
+
+**Expansion remains useful.**
+
+We should not accidentally turn the optimal strategy into sitting at home and building stations.
+
+**Ship classes matter.**
+
+No single ship class should dominate every economic and combat situation.
+
+**Bots behave intelligently enough.**
+
+Bots should build, mine, attack and defend without obvious self-destructive loops.
+
+**Comebacks remain possible.**
+
+A weakened commander should be able to rebuild modest forces and contest territory.
+
+**The match remains approximately 40 minutes.**
+
+Do not substantially slow the overall game because defenses exist.
+
+**Strategic objectives remain attractive.**
+
+Pirates, Guardian, Leviathan and strategic sites should retain meaningful risk/reward.
+
+---
+
+## 21. Review additional balance problems
+
+While testing, identify other obvious issues.
+
+Examples:
+
+- Dreadnought rush dominates.
+- Frigate swarms are always best.
+- AI repeatedly captures the same system.
+- A player can win while never leaving home.
+- Core score overwhelms early play.
+- Defensive investment never pays off.
+- Defensive investment is too profitable.
+- One personality wins disproportionately.
+- Mining is mandatory busywork.
+- Resource economy collapses.
+- Recovery bonuses become exploitable.
+- Fleet numbers cause combat slowdowns.
+- Guardian/Leviathan objectives are unreachable.
+
+Fix clearly demonstrated high-impact problems.
+
+Do not make dozens of arbitrary balance changes just because possible.
+
+Document anything requiring owner approval.
+
+---
+
+# PART E — TESTING AND QUALITY
+
+## 22. Add tests
+
+At minimum cover:
+
+- Defense construction spends resources once.
+- Defense cannot be built on enemy or neutral planets.
+- One installation of each type per planet.
+- Structure cannot exceed Level 3.
+- Upgrades follow level prerequisites.
+- Starting homeworld gets both Level 1 defenses.
+- All eight players receive equal starting defenses.
+- Defense construction does not instantly finish.
+- Defenses participate in combat.
+- Railgun has distinct behavior from orbital station.
+- Defenses can take damage.
+- Defenses can be destroyed.
+- Defenses cannot attack as mobile fleets.
+- Capture cannot complete with active hostile defenses.
+- Ownership changes cannot duplicate structures/resources.
+- Repair works correctly.
+- Bot defenses follow the same rules.
+- Mining completes without duplicate rewards.
+- Repeat mining stops properly when interrupted.
+- Economy balances remain nonnegative.
+- Match completes normally.
+- Accelerated and normal time use identical rules.
+
+---
+
+## 23. Browser testing
+
+Test the actual interface.
+
+Verify:
+
+1. Open a match.
+2. Select homeworld.
+3. See both starting defenses.
+4. Select another owned planet.
+5. Build an Orbital Defense Station.
+6. Upgrade it.
+7. Build a Railgun Battery.
+8. Inspect costs, timers and levels.
+9. Observe defense during attack.
+10. See structures damaged/destroyed.
+11. Repair surviving defenses.
+12. Complete mining cycles.
+13. Enable repeat mining.
+14. Build ships using mined Alloy.
+15. Capture defended territory.
+16. See the defeated structures handled correctly.
+17. Watch bots construct defenses.
+18. Finish a match.
+
+Also verify that the recent map and asteroid visual improvements remain intact.
+
+Do not redesign the entire dashboard.
+
+---
+
+## 24. Documentation and reports
+
+Create:
+
+`docs/ECONOMY_DEFENSE_BALANCE_REPORT.md`
+
+Include:
+
+### Economy
+
+- old vs new resource generation
+- passive vs mining contribution
+- revised ship costs
+- revised mining behavior
+- Fuel analysis
+- affordability/progression
+
+### Planetary defenses
+
+- complete construction rules
+- costs and durations
+- upgrade levels
+- combat stats
+- repair behavior
+- capture behavior
+- bot behavior
+
+### Simulation results
+
+- number of matches
+- seeds
+- victory distribution
+- resource statistics
+- mining use
+- defense construction/use
+- match outcomes
+- gameplay issues
+
+### Recommendations
+
+Explain remaining risks and balance problems.
+
+Update the existing prototype rules documentation.
+
+Update asset provenance.
+
+Keep all balance values centralized rather than scattered in React components.
+
+---
+
+## 25. Constraints
+
+- Local-only prototype.
+- No Supabase.
+- No real multiplayer.
+- No backend implementation.
+- No new resources.
+- No research tree.
+- No formal diplomacy.
+- No major UI redesign.
+- Do not replace the current combat engine wholesale.
+- Do not remove pirates, Guardian or Leviathan.
+- Do not alter the core eight-player free-for-all concept.
+- Do not modify reference repositories.
+- Do not discard existing local changes.
+
+Use the actual current implementation as the source of truth.
+
+---
+
+## 26. Quality gates
+
+Before completion:
+
+- TypeScript typecheck passes.
+- ESLint passes.
+- Unit tests pass.
+- Browser tests pass.
+- Production build passes.
+- Bot-only simulations complete.
+- No duplicated rewards or structures.
+- No gameplay-breaking stalled battles.
+- No unexpected negative resources.
+- Defense assets display correctly.
+- No unrelated UI regressions.
+- Reference repositories remain unchanged.
+
+Commit the work to an appropriate Space Wars feature branch, particularly if previous gameplay QA or visual changes are still being integrated.
+
+Do not automatically merge into main if that would overwrite or conflict with other ongoing work.
+
+---
+
+## Final report
+
+When finished, tell me:
+
+1. What economy values changed and why.
+2. Whether mining is now strategically important.
+3. How repeat mining works.
+4. How Orbital Defense Stations work.
+5. How Railgun Batteries work.
+6. Exact costs, levels and construction times.
+7. How defenses interact with fleet combat.
+8. How damaged/destroyed defenses are handled.
+9. How the AI uses mining and defenses.
+10. Results of the multi-seed simulations.
+11. Remaining economic imbalances.
+12. Whether fortified systems can still be conquered.
+13. Tests and build results.
+14. Any UI changes made.
+15. Exact commit SHA and branch.
+16. Any issues requiring owner attention.
+
+**The objective is to deliver a more balanced and tactically interesting eight-player Quick Conquest game that is ready for serious human playtesting.**
+
+Implement the improvements, test them, report results, and stop.
+
+Do not begin multiplayer/backend work.
