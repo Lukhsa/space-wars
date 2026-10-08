@@ -17,6 +17,7 @@ import {
 import {
   external,
   moving,
+  miningYield,
   ownerName,
   phase,
   standings,
@@ -199,6 +200,23 @@ export function FleetOrders({
   ];
   return (
     <div className="fleet-orders">
+      {f.mission === "mine" && (
+        <div className="mining-order-status">
+          <small>
+            {f.repeatMining ? "Continue mining" : "Mine once"} ·{" "}
+            {miningYield(s, f.owner, s.systems[f.route.at(-1) ?? f.system])}{" "}
+            Alloy / {BALANCE.miningSeconds}s
+          </small>
+          <button
+            disabled={moving(f) || f.status === "Battle"}
+            onClick={() =>
+              mutate((d) => launchFleet(d, f.id, f.system, "defend"))
+            }
+          >
+            Cancel mining
+          </button>
+        </div>
+      )}
       <label>
         FLEET STANCE
         <select

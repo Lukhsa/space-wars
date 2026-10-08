@@ -1,7 +1,15 @@
 import { BALANCE } from "./balance";
 import { activeBuff, log, moving, ownerName, refreshFleet } from "./model";
+import { activeDefenses, defenseSpec } from "./defenses";
 import { randomFrom } from "./random";
-import type { Battle, DemoState, Fleet, ShipUnit } from "./types";
+import type {
+  Battle,
+  DemoState,
+  Fleet,
+  ShipUnit,
+  Installation,
+  Stance,
+} from "./types";
 
 function rewardNeutral(s: DemoState, f: Fleet, winner: number) {
   if (!f.neutral) return;
@@ -25,6 +33,7 @@ function rewardNeutral(s: DemoState, f: Fleet, winner: number) {
   const c = s.commanders[winner];
   if (f.neutral === "pirates") {
     c.stats.pirates++;
+    c.telemetry.salvageAlloy += BALANCE.pirates.alloy;
     c.score += BALANCE.pirates.score;
     c.resources.credits += BALANCE.pirates.credits;
     c.resources.alloy += BALANCE.pirates.alloy;
@@ -59,26 +68,74 @@ function rewardNeutral(s: DemoState, f: Fleet, winner: number) {
     );
   }
 }
-function finish(s: DemoState, b: Battle) {
-  const alive = s.fleets.filter(
-    (f) =>
-      f.system === b.system &&
-      !moving(f) &&
-      f.units.length &&
-      b.owners.includes(f.owner),
+
+// A combatant references an actual hull or planetary installation. Structures never enter s.fleets.
+type Combatant = {
+  owner: number;
+  unit: ShipUnit | Installation;
+  kind: number;
+  stance: Stance;
+  fleet?: Fleet;
+  installation?: Installation;
+};
+function present(s: DemoState, system: number): Combatant[] {
+  const x = s.systems[system];
+  const units: Combatant[] = s.fleets
+    .filter((f) => f.system === system && !moving(f))
+    .flatMap((f) =>
+      f.units.map((unit) => ({
+        owner: f.owner,
+        unit,
+        kind: unit.kind,
+        stance: f.stance,
+        fleet: f,
+      })),
+    );
+  if (x.owner !== null)
+    for (const d of activeDefenses(x))
+      units.push({
+        owner: x.owner,
+        unit: d,
+        kind: 2,
+        stance: "Balanced",
+        installation: d,
+      });
+  return units;
+}
+function spec(c: Combatant) {
+  return c.installation
+    ? defenseSpec(c.installation.kind, c.installation.level)
+    : BALANCE.ships[c.kind];
+}
+const power = (cs: Combatant[]) =>
+  cs.reduce(
+    (n, c) => n + (spec(c).power * Math.max(0, c.unit.hp)) / spec(c).hull,
+    0,
   );
-  const owners = [...new Set(alive.map((f) => f.owner))];
+function finish(s: DemoState, b: Battle) {
+  const alive = present(s, b.system).filter(
+    (c) => c.unit.hp > 0 && b.owners.includes(c.owner),
+  );
+  const owners = [...new Set(alive.map((c) => c.owner))];
   if (owners.length > 1) return false;
   const winner = owners[0];
-  if (winner !== undefined && winner >= 0) s.commanders[winner].stats.wins++;
-  for (const f of alive)
-    if (f.retreatAt === null)
-      f.status = f.mission === "mine" ? "Mining" : "Idle";
+  if (winner !== undefined && winner >= 0) {
+    s.commanders[winner].stats.wins++;
+    if (alive.some((c) => c.installation))
+      s.commanders[winner].telemetry.defenseWins++;
+  }
+  for (const c of alive)
+    if (c.fleet && c.fleet.retreatAt === null) c.fleet.status = "Idle";
   log(
     s,
     "battle",
     winner === undefined ? "Mutual destruction" : "Battle resolved",
-    `${winner === undefined ? "No fleet survived" : ownerName(s, winner) + " holds the field"} at ${s.systems[b.system].name}.`,
+    (winner === undefined
+      ? "No forces survived"
+      : ownerName(s, winner) + " holds the field") +
+      " at " +
+      s.systems[b.system].name +
+      ".",
     b.system,
     b.owners.includes(0),
     b.owners.includes(0),
@@ -98,156 +155,157 @@ function finish(s: DemoState, b: Battle) {
 }
 export function combatTick(s: DemoState) {
   s.battles = s.battles.filter((b) => !finish(s, b));
-  for (const system of s.systems) {
-    if (system.capital || s.battles.some((b) => b.system === system.id))
-      continue;
-    const present = s.fleets.filter(
-      (f) => f.system === system.id && !moving(f) && f.units.length,
-    );
-    const owners = [...new Set(present.map((f) => f.owner))].sort(
-      (a, b) => a - b,
-    );
+  for (const x of s.systems) {
+    if (x.capital || s.battles.some((b) => b.system === x.id)) continue;
+    const cs = present(s, x.id),
+      owners = [...new Set(cs.map((c) => c.owner))].sort((a, b) => a - b);
     if (owners.length < 2) continue;
-    // Two deterministic sides; further arrivals join their side or await the next engagement.
     const chosen = owners.slice(0, 2),
-      forces = chosen.map((o) => present.filter((f) => f.owner === o));
+      initial = chosen.map((o) => power(cs.filter((c) => c.owner === o)));
     const b: Battle = {
       id: ++s.serial,
-      system: system.id,
+      system: x.id,
       owners: chosen,
       start: s.time,
-      initial: forces.map((fs) => fs.reduce((n, f) => n + f.power, 0)),
-      power: [],
+      initial,
+      power: [...initial],
       casualties: [0, 0],
       participants: [],
     };
-    b.power = [...b.initial];
     s.battles.push(b);
-    system.capture = null;
+    x.capture = null;
     for (const o of chosen)
       if (o >= 0) {
         s.commanders[o].stats.battles++;
         if (chosen.includes(-2)) s.commanders[o].stats.guardian++;
+        if (cs.some((c) => c.installation && chosen.includes(c.owner)))
+          s.commanders[o].telemetry.defenseBattles++;
       }
     log(
       s,
       "battle",
-      `Battle of ${system.name}`,
-      `${ownerName(s, chosen[0])} vs ${ownerName(s, chosen[1])}`,
-      system.id,
-      chosen.includes(0) || system.owner === 0,
-      chosen.includes(0) || system.owner === 0,
+      "Battle of " + x.name,
+      ownerName(s, chosen[0]) +
+        " vs " +
+        ownerName(s, chosen[1]) +
+        (activeDefenses(x).length ? " · planetary defenses engaged" : ""),
+      x.id,
+      chosen.includes(0),
+      chosen.includes(0),
     );
   }
   for (const b of s.battles) {
-    const forces = b.owners.map((owner) =>
-      s.fleets.filter(
-        (f) =>
-          f.owner === owner &&
-          f.system === b.system &&
-          !moving(f) &&
-          f.units.length,
-      ),
-    );
-    for (const fs of forces)
-      for (const f of fs) {
+    const cs = present(s, b.system),
+      forces = b.owners.map((o) => cs.filter((c) => c.owner === o));
+    // Any hostile arrival cancels extraction, including owners awaiting a two-side engagement.
+    for (const f of s.fleets.filter(
+      (f) => f.system === b.system && !moving(f),
+    )) {
+      if (f.mission === "mine") {
+        f.repeatMining = false;
+        f.miningElapsed = 0;
+        f.mission = "defend";
+      }
+      if (b.owners.includes(f.owner)) {
         if (!b.participants.includes(f.id)) b.participants.push(f.id);
         if (f.retreatAt === null) f.status = "Battle";
-      }
-    const random = randomFrom(`${s.seed}:combat:${b.id}:${s.time}`);
-    // Snapshot volleys, then apply simultaneously. Units killed this tick still fire.
-    const hits: {
-      target: ShipUnit;
-      damage: number;
-      source: number;
-      fleet: Fleet;
-    }[] = [];
-    forces.forEach((fs, side) => {
-      const targets = forces[1 - side].flatMap((f) =>
-        f.units.map((u) => ({ f, u })),
-      );
-      for (const f of fs)
-        for (const u of f.units) {
-          if (!targets.length) continue;
-          const sorted = [...targets].sort((a, b) =>
-            f.stance === "Focus capitals"
-              ? b.u.kind - a.u.kind
-              : f.stance === "Focus escorts"
-                ? a.u.kind - b.u.kind
-                : 0,
+      } else if (f.status === "Mining") f.status = "Idle";
+    }
+    const random = randomFrom(s.seed + ":combat:" + b.id + ":" + s.time);
+    const hits: { target: Combatant; damage: number; source: number }[] = [];
+    const escalation =
+      1 +
+      Math.max(0, s.time - b.start - BALANCE.combat.escalationStarts) /
+        BALANCE.combat.escalationStep;
+    forces.forEach((force, side) => {
+      for (const c of force) {
+        const railgun = c.installation?.kind === "railgun";
+        if (
+          railgun &&
+          (s.time - b.start) % BALANCE.defenses.railgunCadence !== 0
+        )
+          continue;
+        let targets = [...forces[1 - side]];
+        if (!targets.length) continue;
+        if (railgun || c.stance.startsWith("Focus")) {
+          targets.sort((a, b) =>
+            c.stance === "Focus escorts" ? a.kind - b.kind : b.kind - a.kind,
           );
-          const pool = f.stance.startsWith("Focus")
-            ? sorted.filter((t) => t.u.kind === sorted[0].u.kind)
-            : sorted;
-          const t = pool[Math.floor(random() * pool.length)],
-            spec = BALANCE.ships[u.kind],
-            armor = BALANCE.ships[t.u.kind].armor;
-          const offense =
-            f.stance === "Aggressive"
-              ? BALANCE.combat.aggressiveAttack
-              : f.stance === "Defensive"
-                ? BALANCE.combat.defensiveAttack
-                : 1;
-          const defense =
-            t.f.stance === "Defensive"
-              ? BALANCE.combat.defensiveDamage
-              : t.f.stance === "Aggressive"
-                ? BALANCE.combat.aggressiveDamage
-                : 1;
-          const role =
-            u.kind === 1 && t.u.kind === 0
-              ? BALANCE.combat.antiEscort
-              : u.kind === 3 && t.u.kind === 0
-                ? BALANCE.combat.capitalVsSmall
-                : 1;
-          const buff =
-            1 +
-            (activeBuff(s, f.owner, "guardian") ? BALANCE.guardian.damage : 0) +
-            (activeBuff(s, f.owner, "leviathan")
+          targets = targets.filter((t) => t.kind === targets[0].kind);
+        }
+        const t = targets[Math.floor(random() * targets.length)];
+        const offense =
+          c.stance === "Aggressive"
+            ? BALANCE.combat.aggressiveAttack
+            : c.stance === "Defensive"
+              ? BALANCE.combat.defensiveAttack
+              : 1;
+        const defense =
+          t.stance === "Defensive"
+            ? BALANCE.combat.defensiveDamage
+            : t.stance === "Aggressive"
+              ? BALANCE.combat.aggressiveDamage
+              : 1;
+        const role =
+          railgun && t.kind < 2
+            ? BALANCE.defenses.railgunVsSmall
+            : c.installation?.kind === "station" && t.kind < 2
+              ? BALANCE.defenses.stationVsEscort
+              : !c.installation && c.kind === 1 && t.kind === 0
+                ? BALANCE.combat.antiEscort
+                : !c.installation && c.kind === 3 && t.kind === 0
+                  ? BALANCE.combat.capitalVsSmall
+                  : 1;
+        const buff = c.installation
+          ? 1
+          : 1 +
+            (activeBuff(s, c.owner, "guardian") ? BALANCE.guardian.damage : 0) +
+            (activeBuff(s, c.owner, "leviathan")
               ? BALANCE.leviathan.damage
               : 0);
-          const escalation =
-            1 +
-            Math.max(0, s.time - b.start - BALANCE.combat.escalationStarts) /
-              BALANCE.combat.escalationStep;
-          hits.push({
-            target: t.u,
-            fleet: t.f,
-            source: f.owner,
-            damage:
-              Math.max(1, spec.attack - armor) *
-              offense *
-              defense *
-              role *
-              buff *
-              (1 -
-                BALANCE.combat.variation / 2 +
-                random() * BALANCE.combat.variation) *
-              escalation,
-          });
-        }
+        hits.push({
+          target: t,
+          source: c.owner,
+          damage:
+            Math.max(1, spec(c).attack - spec(t).armor) *
+            offense *
+            defense *
+            role *
+            buff *
+            (1 -
+              BALANCE.combat.variation / 2 +
+              random() * BALANCE.combat.variation) *
+            escalation,
+        });
+      }
     });
     const killers = new Map<number, number>();
     for (const h of hits) {
-      const alive = h.target.hp > 0;
-      h.target.hp -= h.damage;
-      if (alive && h.target.hp <= 0) {
-        const side = b.owners.indexOf(h.fleet.owner);
-        b.casualties[side]++;
-        killers.set(h.fleet.id, h.source);
-        if (h.source >= 0) {
-          s.commanders[h.source].stats.destroyed++;
-          if (h.fleet.owner >= 0)
-            s.commanders[h.source].score += BALANCE.score.kill;
+      const t = h.target,
+        alive = t.unit.hp > 0;
+      t.unit.hp = Math.max(0, t.unit.hp - h.damage);
+      if (alive && t.unit.hp <= 0) {
+        if (t.installation) {
+          t.installation.job = null;
+          if (t.owner >= 0) s.commanders[t.owner].telemetry.defensesDestroyed++;
+        } else if (t.fleet) {
+          b.casualties[b.owners.indexOf(t.owner)]++;
+          killers.set(t.fleet.id, h.source);
+          if (h.source >= 0) {
+            s.commanders[h.source].stats.destroyed++;
+            if (t.owner >= 0)
+              s.commanders[h.source].score += BALANCE.score.kill;
+          }
         }
       }
     }
-    for (const fs of forces)
-      for (const f of fs) {
-        refreshFleet(f);
-        if (!f.units.length) rewardNeutral(s, f, killers.get(f.id) ?? -1);
-      }
-    b.power = forces.map((fs) => fs.reduce((n, f) => n + f.power, 0));
+    for (const f of s.fleets.filter(
+      (f) => f.system === b.system && b.owners.includes(f.owner) && !moving(f),
+    )) {
+      refreshFleet(f);
+      if (!f.units.length) rewardNeutral(s, f, killers.get(f.id) ?? -1);
+    }
+    b.power = forces.map(power);
   }
   s.fleets = s.fleets.filter((f) => f.units.length > 0);
   s.battles = s.battles.filter((b) => !finish(s, b));

@@ -721,6 +721,42 @@ export default function GalaxyMap({
             />
           )}
           {systemNodes}
+          {detail === "close" &&
+            state.systems
+              .filter((s) => visible.has(s.id) || state.devReveal)
+              .flatMap((s) =>
+                s.installations.map((d) => {
+                  const p = mapLayout.planets[s.id][d.planet];
+                  if (!p) return null;
+                  return (
+                    <g
+                      key={`${s.id}-${d.planet}-${d.kind}`}
+                      className="defense-map-marker"
+                      pointerEvents="none"
+                      transform={`translate(${s.x + p.x} ${s.y + p.y + (d.kind === "station" ? 25 : 38)})`}
+                    >
+                      <text
+                        textAnchor="middle"
+                        fontSize="10"
+                        fill={
+                          state.battles.some((b) => b.system === s.id)
+                            ? "#ffa47f"
+                            : d.hp > 0
+                              ? "#9fd8d0"
+                              : "#8d8c90"
+                        }
+                      >
+                        {d.kind === "station" ? "◆" : "⌖"}{" "}
+                        {d.job
+                          ? "BUILD"
+                          : d.hp <= 0
+                            ? "RUINS"
+                            : ["", "I", "II", "III"][d.level]}
+                      </text>
+                    </g>
+                  );
+                }),
+              )}
           <g className="asteroid-fields">
             {mapLayout.fields.map((field) => {
               const s = state.systems[field.system];

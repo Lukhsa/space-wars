@@ -92,9 +92,13 @@ describe("economy and fleets", () => {
       f = s.fleets[1];
     expect(launchFleet(s, f.id, 0, "mine")).toBeNull();
     run(s, 40);
-    expect(s.commanders[0].stats.mined).toBe(265);
+    expect(s.commanders[0].stats.mined).toBe(
+      BALANCE.miningAlloy + BALANCE.miningFuel,
+    );
     run(s, 40);
-    expect(s.commanders[0].stats.mined).toBe(265);
+    expect(s.commanders[0].stats.mined).toBe(
+      BALANCE.miningAlloy + BALANCE.miningFuel,
+    );
   });
   it("forms and reinforces fleets without duplicating ships", () => {
     const s = quiet();

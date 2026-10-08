@@ -18,7 +18,7 @@ Open **http://127.0.0.1:5173/**. A match starts immediately. Refresh resets it; 
 ## Your first match
 
 1. Select **1st Expeditionary**, search for **Nexus**, then **Claim system → Launch assault**. Hold the cleared system for 20 seconds to gain its worlds, income and score.
-2. Select **Mining Group Alpha**, open **Nova Prime Belt**, and **Send mining fleet**. A 40-second cycle yields 200 Alloy and 65 Fuel. Mining is one cycle per order.
+2. Select **Mining Group Alpha**, open **Nova Prime Belt**, and **Send mining fleet**. A 40-second home cycle yields 90 Alloy. Choose Mine once or Continue mining; richer contested fields yield more. One extraction fleet per system.
 3. **Build a ship** supports quantities of 1, 2, 3 or 5. Two berths work through a ten-ship queue. **Fleets** lets you allocate reserve hulls to a new fleet or reinforce a fleet at home.
 4. Scout before fighting. **Caldera** and the other contested middle systems hold pirates and strategic bonuses. Hostile fleets intercept at intermediate systems on a route.
 5. During battle, select your fleet and choose **Aggressive**, **Defensive**, **Focus capitals**, **Focus escorts**, or **Retreat**. Withdrawal takes six exposed seconds, then the survivors travel home. The rest of the galaxy remains usable.
@@ -62,3 +62,5 @@ npm run simulate -- MY-SEED --duration=600
 | `scripts/generate-assets.mjs`                           | Reproducible original SVG stars, belts, facilities and neutral objectives                  |
 
 The earlier [architecture](docs/PROJECT_ARCHITECTURE.md), [reuse audit](docs/REFERENCE_REUSE_AUDIT.md), [galaxy](docs/GALAXY_MODEL.md), [security](docs/PVP_SECURITY_MODEL.md), [bots](docs/BOT_ARCHITECTURE.md) and [implementation plan](docs/IMPLEMENTATION_PLAN.md) remain future Campaign/multiplayer reference. Their production scope and Battle Lab V2 requirements are superseded **for this local phase** by [prompt_02.txt](prompt_02.txt). No production work is authorized by this implementation. Read [AGENTS.md](AGENTS.md); reference repositories remain read-only.
+
+Economy and planetary defenses: [rules, costs, simulation evidence and remaining risks](docs/ECONOMY_DEFENSE_BALANCE_REPORT.md). Select a system and planet to build, upgrade or repair orbital stations and railguns.

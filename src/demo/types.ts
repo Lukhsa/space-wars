@@ -7,6 +7,35 @@ export type Personality =
   "Expansionist" | "Aggressor" | "Industrialist" | "Turtle" | "Opportunist";
 export type Resources = { credits: number; alloy: number; fuel: number };
 export type ShipUnit = { kind: number; hp: number };
+export type DefenseKind = "station" | "railgun";
+export interface Installation {
+  planet: number;
+  kind: DefenseKind;
+  level: number;
+  hp: number;
+  job: {
+    action: "build" | "upgrade" | "repair";
+    level: number;
+    elapsed: number;
+    duration: number;
+  } | null;
+}
+export interface Telemetry {
+  passive: Resources;
+  spent: Resources;
+  minedAlloy: number;
+  miningSeconds: number;
+  salvageAlloy: number;
+  builtClasses: number[];
+  defensesBuilt: number;
+  defensesUpgraded: number;
+  defensesDestroyed: number;
+  defenseBattles: number;
+  defenseWins: number;
+  repairs: number;
+  repairAlloy: number;
+  ownershipFlips: number;
+}
 export interface Stats {
   peak: number;
   battles: number;
@@ -32,6 +61,7 @@ export interface Civilization {
   portrait?: string;
 }
 export interface Commander {
+  telemetry: Telemetry;
   id: number;
   name: string;
   civilization: number;
@@ -55,6 +85,7 @@ export interface Commander {
   intel: Record<number, number>;
 }
 export interface System extends Point {
+  installations: Installation[];
   id: number;
   name: string;
   owner: number | null;
@@ -101,6 +132,7 @@ export interface Fleet {
   duration: number;
   mission: Mission;
   miningElapsed: number;
+  repeatMining: boolean;
   units: ShipUnit[];
   stance: Stance;
   previous: number;

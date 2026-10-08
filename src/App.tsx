@@ -34,7 +34,12 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BALANCE, STAR_NAMES } from "./demo/balance";
-import { strengthEstimate, syncPlayer, incomePerMinute } from "./demo/model";
+import {
+  strengthEstimate,
+  syncPlayer,
+  incomePerMinute,
+  miningYield,
+} from "./demo/model";
 import { routeFor, fuelCost } from "./demo/commands";
 import {
   MatchHUD,
@@ -49,6 +54,7 @@ import {
   shipRole,
 } from "./components/QuickConquest";
 import GalaxyMap from "./components/GalaxyMap";
+import { PlanetaryDefenses } from "./components/PlanetaryDefenses";
 import { asteroidAppearance, asteroidSiteName } from "./demo/asteroid-art";
 import {
   asset,
@@ -212,8 +218,13 @@ function Modal({
   );
 }
 
-export default function App() {
-  const [state, setState] = useState(() => generateGalaxy("ORION-7742"));
+export default function App({
+  initialState,
+}: { initialState?: DemoState } = {}) {
+  const [state, setState] = useState(
+    () => initialState ?? generateGalaxy("ORION-7742"),
+  );
+  const [repeatMining, setRepeatMining] = useState(false);
   const [selected, setSelected] = useState(0),
     [asteroid, setAsteroid] = useState(false),
     [selectedFleet, setSelectedFleet] = useState<number | null>(
@@ -322,6 +333,7 @@ export default function App() {
     }));
   };
   const openOrder = (mission: Mission) => {
+    setRepeatMining(false);
     const preferred =
       available.find((f) => f.id === selectedFleet) ?? available[0];
     if (!preferred) {
@@ -615,7 +627,14 @@ export default function App() {
                   <div>
                     <small>RICHNESS</small>
                     <strong>
-                      High <span className="richness-bars">▂▃▅</span>
+                      {s.region === "Home"
+                        ? "Standard"
+                        : s.region === "Frontier"
+                          ? "Enriched"
+                          : s.region === "Mid"
+                            ? "Rich"
+                            : "Exceptional"}{" "}
+                      <span className="richness-bars">▂▃▅</span>
                     </strong>
                   </div>
                 </div>
@@ -624,7 +643,7 @@ export default function App() {
                   <div>
                     <small>ESTIMATED EXTRACTION</small>
                     <strong>
-                      +{format(s.richness)} <span>Alloy</span>
+                      +{format(miningYield(state, 0, s))} <span>Alloy</span>
                     </strong>
                   </div>
                   <span>{BALANCE.miningSeconds}s</span>
@@ -773,6 +792,14 @@ export default function App() {
               </div>
             </div>
             <SystemDetails state={state} selected={selected} />
+            {!asteroid && (
+              <PlanetaryDefenses
+                key={selected}
+                state={state}
+                selected={selected}
+                mutate={mutate}
+              />
+            )}
             <div className="inspector-note">
               <Radio size={12} />
               {own
@@ -1319,7 +1346,7 @@ export default function App() {
                       ?.map(format)
                       .join("–") ?? "Unknown")
                   : order.mission === "mine"
-                    ? `+${format(state.systems[order.target].richness)}`
+                    ? `+${format(miningYield(state, 0, state.systems[order.target]))}`
                     : preview.length - 1}
               </strong>
             </div>
@@ -1344,10 +1371,23 @@ export default function App() {
               {order.mission === "attack"
                 ? "Combat resolves on the map. Clear hostile fleets, then hold for 20 seconds to capture. Intermediate hostiles intercept your route."
                 : order.mission === "mine"
-                  ? "Secure the system, then extract Alloy and Fuel for 40 seconds. Your fleet returns to idle after one cycle."
+                  ? `Extract Alloy every ${BALANCE.miningSeconds}s. One extraction fleet per system. Combat cancels mining; new orders cancel the current cycle.`
                   : "Your fleet follows the connected travel lanes. Orders cannot change while underway."}
             </span>
           </div>
+          {order.mission === "mine" && (
+            <label className="repeat-mining-choice">
+              Mining order
+              <select
+                aria-label="Mining mode"
+                value={repeatMining ? "repeat" : "once"}
+                onChange={(e) => setRepeatMining(e.target.value === "repeat")}
+              >
+                <option value="once">Mine once</option>
+                <option value="repeat">Continue mining</option>
+              </select>
+            </label>
+          )}
           <div className="modal-footer">
             <button className="secondary-button" onClick={() => setOrder(null)}>
               Cancel
@@ -1358,7 +1398,13 @@ export default function App() {
                 if (
                   mutate(
                     (d) =>
-                      launchFleet(d, order.fleet, order.target, order.mission),
+                      launchFleet(
+                        d,
+                        order.fleet,
+                        order.target,
+                        order.mission,
+                        repeatMining,
+                      ),
                     "Orders confirmed. Fleet underway.",
                   )
                 ) {

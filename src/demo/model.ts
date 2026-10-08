@@ -1,6 +1,20 @@
 import { BALANCE, PHASES } from "./balance";
+import { defensePower } from "./defenses";
 import type { Strategic } from "./balance";
-import type { DemoState, Fleet, LogEvent, Resources, ShipUnit } from "./types";
+import type {
+  DemoState,
+  Fleet,
+  LogEvent,
+  Resources,
+  ShipUnit,
+  System,
+} from "./types";
+export const miningYield = (s: DemoState, owner: number, x: System) =>
+  Math.round(
+    x.richness *
+      (s.surgeUntil > s.time ? 1 + BALANCE.surge.alloy : 1) *
+      (hasBonus(s, owner, "titanium") ? 1 + BALANCE.buffs.titanium : 1),
+  );
 export const moving = (f: Fleet) => f.route.length > 1;
 export function unitsFrom(counts: number[]): ShipUnit[] {
   return counts.flatMap((count, kind) =>
@@ -42,6 +56,7 @@ export function makeFleet(
     duration: 0,
     mission: "move",
     miningElapsed: 0,
+    repeatMining: false,
     stance: "Balanced",
     previous: system,
     retreatAt: null,
@@ -140,7 +155,10 @@ export function strengthEstimate(
     return null;
   const p = s.fleets
     .filter((f) => f.owner !== owner && f.system === system && !moving(f))
-    .reduce((n, f) => n + f.power, 0);
+    .reduce(
+      (n, f) => n + f.power,
+      s.systems[system].owner !== owner ? defensePower(s.systems[system]) : 0,
+    );
   const scout = (s.commanders[owner].intel[system] ?? 0) > s.time;
   return [
     Math.floor((p * (scout ? 0.9 : 0.7)) / 100) * 100,

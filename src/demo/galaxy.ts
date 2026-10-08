@@ -2,6 +2,7 @@ import { BALANCE, type Strategic } from "./balance";
 import { randomFrom } from "./random";
 import { distance } from "./routes";
 import { makeFleet } from "./model";
+import { homeDefenses } from "./defenses";
 import type { Commander, DemoState, Lane, Personality, System } from "./types";
 export { randomFrom } from "./random";
 export { distance, routeBetween } from "./routes";
@@ -76,6 +77,22 @@ export function generateGalaxy(
     reserve: [0, 0, 0, 0],
     queue: [],
     score: 0,
+    telemetry: {
+      passive: { credits: 0, alloy: 0, fuel: 0 },
+      spent: { credits: 0, alloy: 0, fuel: 0 },
+      minedAlloy: 0,
+      miningSeconds: 0,
+      salvageAlloy: 0,
+      builtClasses: [0, 0, 0, 0],
+      defensesBuilt: 0,
+      defensesUpgraded: 0,
+      defensesDestroyed: 0,
+      defenseBattles: 0,
+      defenseWins: 0,
+      repairs: 0,
+      repairAlloy: 0,
+      ownershipFlips: 0,
+    },
     stats: {
       peak: 1,
       battles: 0,
@@ -119,6 +136,7 @@ export function generateGalaxy(
     const s: System = {
       id,
       name: names[id],
+      installations: id < 8 ? homeDefenses() : [],
       x,
       y,
       owner: id < 8 ? id : null,
@@ -133,7 +151,7 @@ export function generateGalaxy(
       asteroid: belts > 0,
       population: 0,
       defense: 0,
-      richness: BALANCE.miningAlloy,
+      richness: Math.round(BALANCE.miningAlloy * BALANCE.miningRichness[ring]),
       scouted: id === 0,
       capturedAt: -100,
       output: [

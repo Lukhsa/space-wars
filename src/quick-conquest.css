@@ -580,3 +580,83 @@
     min-width: 40%;
   }
 }
+.planetary-defenses {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #263e4c;
+}
+.planetary-defenses label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+.planetary-defenses select,
+.repeat-mining-choice select {
+  background: #11232d;
+  color: #dce8eb;
+  border: 1px solid #365060;
+  border-radius: 4px;
+  padding: 5px;
+  max-width: 100%;
+}
+.defense-card {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #263e4c;
+}
+.defense-card img {
+  width: 58px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.defense-card strong {
+  display: block;
+  font-size: 11px;
+}
+.defense-card small,
+.planetary-defenses > small {
+  display: block;
+  font-size: 10px;
+  color: #a6bdc5;
+  line-height: 1.6;
+}
+.defense-card progress {
+  width: 100%;
+  height: 5px;
+  accent-color: #50c0be;
+}
+.defense-actions,
+.defense-work {
+  grid-column: 1 / -1;
+}
+.defense-actions button,
+.mining-order-status button {
+  background: #18323d;
+  color: #d4ecec;
+  border: 1px solid #35606a;
+  padding: 6px 9px;
+  margin-top: 5px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.defense-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.defense-alert {
+  color: #ffb082;
+  font-size: 11px;
+}
+.repeat-mining-choice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+}
+.mining-order-status {
+  width: 100%;
+}

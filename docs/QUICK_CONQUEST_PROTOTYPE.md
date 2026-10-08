@@ -1,6 +1,8 @@
 # Quick Conquest local prototype
 
-Phase 2 implements the owner's `prompt_02.txt`. This is a gameplay validation build, not the future persistent Campaign or production multiplayer architecture. The existing React/Vite dashboard, SVG camera, territory geometry, visual palette, event navigation and asset catalog were extended rather than discarded.
+The economy/defense update implements `prompt_03.txt`; exact balance, verification and limitations are recorded in [ECONOMY_DEFENSE_BALANCE_REPORT.md](ECONOMY_DEFENSE_BALANCE_REPORT.md).
+
+Phase 2 originally implemented the owner's `prompt_02.txt`. This is a gameplay validation build, not the future persistent Campaign or production multiplayer architecture. The existing React/Vite dashboard, SVG camera, territory geometry, visual palette, event navigation and asset catalog were extended rather than discarded.
 
 ## Match and galaxy
 
@@ -10,7 +12,7 @@ Phase 2 implements the owner's `prompt_02.txt`. This is a gameplay validation bu
 - A seeded, perturbed sector layout keeps starts approximately evenly spaced, with shared approaches into the middle and Core. All homes have two routes; the connected graph is symmetric in opportunity, with modest travel differences from geometry. Planet appearances, stars, belt counts, strategic placement, personality allocation and objective sites vary deterministically.
 - Each system has a star, 2–4 planets (homes have three), 0–2 asteroid fields (homes/frontier have one), optional facilities and present fleets. The lane graph connects **systems**, never planets. Controlling a system controls all its worlds and output. For the default seed there are 118 internal worlds/fields/facilities (81 planets, 29 fields, eight facilities), plus 28 stars.
 - Homes cannot be captured, attacked, entered or used as transit by foreign fleets. Their output is permanent; they do not score or count toward domination.
-- Capture requires **20 consecutive seconds** with only one commander's occupying fleets and no hostile presence. Scouting-only or withdrawing fleets do not initiate capture. Any hostile presence interrupts occupation, including third parties waiting for combat.
+- Capture requires **20 consecutive seconds** with only one commander's occupying fleets and no hostile presence, including operational planetary defenses. Scouting-only or withdrawing fleets do not initiate capture. Any hostile presence interrupts occupation, including third parties waiting for combat.
 
 ## Economy and production
 
@@ -18,25 +20,25 @@ Every commander starts with **1,800 Credits / 1,100 Alloy / 600 Fuel**, an exped
 
 | Source   | Credits/min | Alloy/min | Fuel/min |
 | -------- | ----------: | --------: | -------: |
-| Home     |         360 |       240 |      100 |
-| Frontier |         150 |        55 |       35 |
-| Middle   |         200 |        90 |       45 |
-| Core     |         260 |       100 |       55 |
+| Home     |         360 |        90 |       30 |
+| Frontier |         150 |        25 |        8 |
+| Middle   |         200 |        40 |       12 |
+| Core     |         260 |        55 |       16 |
 
 Credits finance construction. Alloy is the main shipbuilding constraint. Fuel pays for movement. Base output is shown per system; the top Credits rate includes current territory and applicable buffs.
 
-Mining requires friendly control and an asteroid field. One **40-second cycle** yields **200 Alloy + 65 Fuel**, then the fleet becomes idle. Mining can be interrupted by combat or new orders. Deposits do not deplete; multiple belts currently share one system extraction value. There are no extra resources or colony upgrades.
+Mining requires friendly control and an asteroid field. Choose Mine once or Continue mining: each 40-second cycle yields 90 / 108 / 135 / 162 base Alloy in Home / Frontier / Middle / Core systems. Titanium and the temporary Alloy Surge modify actual yield. Mining provides no Fuel. One extraction fleet may be assigned per system, including inbound orders, regardless of belt count. Repeat orders run until cancelled, displaced, attacked or ownership is lost; interrupted cycles award nothing and combat requires a new mining order afterward. Deposits do not deplete. Richness is symmetric by starting region, with stronger opportunities toward contested territory.
 
 | Class       | Credits / Alloy | Base build |  Hull | Attack/tick | Armor | Power | Speed | Role                           |
 | ----------- | --------------- | ---------: | ----: | ----------: | ----: | ----: | ----: | ------------------------------ |
-| Frigate     | 240 / 140       |        25s |   180 |          12 |     1 |   240 |  1.12 | Cheap, fast expansion          |
+| Frigate     | 240 / 150       |        25s |   180 |          12 |     1 |   240 |  1.12 | Cheap, fast expansion          |
 | Destroyer   | 480 / 280       |        42s |   430 |          27 |     2 |   560 |  1.00 | Escort killer / general combat |
 | Cruiser     | 1,000 / 600     |        75s | 1,050 |          62 |     4 | 1,250 |  0.90 | Sustained line combat          |
-| Dreadnought | 2,100 / 1,300   |       150s | 2,500 |         135 |     7 | 2,700 |  0.75 | Heavy commitment               |
+| Dreadnought | 2,100 / 1,400   |       150s | 2,500 |         135 |     7 | 2,700 |  0.75 | Heavy commitment               |
 
-Two production berths process a FIFO queue of up to ten ships. Costs are paid when queued. Quantity controls accept 1/2/3/5. Completion adds actual hulls to reserve; reserve allocations form fleets or reinforce ships at the home shipyard. Maximum five fleets per commander, 32 hulls per fleet. Home repairs restore 1.2% of maximum hull per simulated second. There are no repair resource costs in this prototype.
+Two production berths process a FIFO queue of up to ten ships. Costs are paid when queued. Quantity controls accept 1/2/3/5. Completion adds actual hulls to reserve; reserve allocations form fleets or reinforce ships at the home shipyard. Maximum five fleets per commander, 32 hulls per fleet. Home repairs restore 1.2% of maximum hull per simulated second. Mobile home repair remains free; stationary planetary defenses use paid timed repairs.
 
-Movement costs 24 Fuel per hop before Logistics discounts. Travel is physical along each lane, at 16 map units/sec divided by the slowest hull's speed factor, with a 20-second minimum per hop. A route traverses all intermediate systems; hostile stationary fleets stop it and start battle. Ordinary orders cannot redirect fleets while travelling. The UI previews the full route and total travel time, then shows each current leg's countdown.
+Movement costs 12 Fuel per hop plus 3 / 6 / 12 / 20 per Frigate / Destroyer / Cruiser / Dreadnought per hop, before the existing 8% Logistics discount. The full route is paid on ordering; retreat also pays for its return route. Travel is physical along each lane, at 16 map units/sec divided by the slowest hull's speed factor, with a 20-second minimum per hop. A route traverses all intermediate systems; hostile stationary fleets stop it and start battle. Ordinary orders cannot redirect fleets while travelling. The UI previews the full route and total travel time, then shows each current leg's countdown.
 
 ## Combat and player commands
 
@@ -60,7 +62,7 @@ Retreat is not a teleport. Surviving ships physically traverse a valid route; an
 
 ## Pirates, strategic sites and major objectives
 
-Eight middle systems initially host seeded-strength Black Ledger pirate forces: **Raider Camp** (3 Frigates), **Pirate Patrol** (3 Frigates + Destroyer), or **Stronghold** (4 Frigates + 2 Destroyers). Defeating one fleet pays **450 Credits / 240 Alloy / 90 Fuel / 75 Dominion** exactly once. The initial distribution is rotated by seed, not perfectly equal by individual encounter. One surviving pirate fleet may raid a neighboring owned, non-home system every 210 seconds. Pirates do not respawn continuously or control planets themselves.
+Eight middle systems initially host seeded-strength Black Ledger pirate forces: **Raider Camp** (3 Frigates), **Pirate Patrol** (3 Frigates + Destroyer), or **Stronghold** (4 Frigates + 2 Destroyers). Defeating one fleet pays **450 Credits / 120 Alloy / 45 Fuel / 75 Dominion** exactly once. The initial distribution is rotated by seed, not perfectly equal by individual encounter. One surviving pirate fleet may raid a neighboring owned, non-home system every 210 seconds. Pirates do not respawn continuously or control planets themselves.
 
 Each middle sector has a strategic facility. The seed rotates six bonus types across eight sites; Forge and Relay occur twice. Duplicate bonuses **do not stack**.
 
@@ -117,11 +119,11 @@ Weighted utility considers public territory, strategic value, lane distance, det
 
 - Expansionist: prefers unclaimed systems.
 - Aggressor: accepts more risk and prefers rival territory.
-- Industrialist: gives mining more utility.
+- Industrialist: favors mining and secures extraction sites; all profiles mine according to Alloy demand, fleet suitability, travel and danger. Repeat orders avoid repeated clicks.
 - Turtle: prioritizes visible threats to owned territory.
 - Opportunist: prefers weak resistance and exposed objectives.
 
-Seven profiles are assigned from a seeded shuffled pool with duplication. Bots can retreat, return weakened fleets to reinforce, rebuild after destruction, and attack major objectives when estimated capacity permits. Their policy implementation has access to the local world for topology/commands, but enemy-force decisions are taken through visibility/estimate helpers; it is not the strict future server observation DTO boundary.
+Seven profiles are assigned from a seeded shuffled pool with duplication. Bots can retreat, return weakened fleets to reinforce, rebuild after destruction, and attack major objectives when estimated capacity permits. Turtles commit up to 32% of acquired-plus-starting Alloy to defenses, Industrialists 25%, Opportunists 22%, Expansionists 18% and Aggressors 10%. These are spending ceilings, not grants. Bots prefer exposed valuable systems, preserve a shipbuilding reserve, repair damaged installations, upgrade after early expansion, and avoid visible imminent overwhelming attacks. Fortifications enter their threat estimates. Their policy implementation has access to the local world for topology/commands, but enemy-force decisions are taken through visibility/estimate helpers; it is not the strict future server observation DTO boundary.
 
 Global Chat accepts human text as ordinary escaped React text, limited to 240 characters. A curated context-aware bot message appears every 65–129 seconds. AI messages are labeled; chat has no diplomacy effects and does not transmit anywhere.
 
@@ -134,3 +136,9 @@ Rules use one-second ticks plus a fractional browser accumulator; a given seed a
 Known shortcuts: memory-only session; no independent planet warfare; unlimited deposits; simple repairs; no fleet merge/split away from home; generic cross-faction hulls; neutral objectives represented as common hull groups; two-side engagement ordering; modest intelligence bands; no procedural three-dimensional orbit physics; no collision-free map-label solver; no audio; no elaborate save history. These are deliberate prototype boundaries. Build costs and all core timings/rewards are centralized in `src/demo/balance.ts`; policy heuristics remain in `ai.ts`.
 
 Supabase, authentication, real multiplayer/chat, server, matchmaking, persistence, payments/ads, guilds, alliances, progression/research, diplomacy, persistent Campaign, mobile-native work and full Battle Lab V2 remain postponed. Stop here for owner review.
+
+## Planetary defenses
+
+Each planet supports one Orbital Defense Station and one Planetary Railgun Battery, each up to level 3. Every primary home planet starts with both at level 1, free; homes remain protected. Build, upgrade and repair through the existing system inspector’s planet selector. One active job per system and two per commander. Costs/times, stats and lifecycle are listed in [the balance report](ECONOMY_DEFENSE_BALANCE_REPORT.md).
+
+Structures use the same simultaneous combat tick and escalation as ships, remain stationary, retain damage, and block capture while operational. Stations fire every tick with an escort bonus; railguns fire every four ticks, prefer large targets, and do reduced damage to small ships. Existing installations remain combat-capable while upgrading or repairing, but work pauses whenever hostile stationary forces are present. Upgrades preserve condition fraction; repair restores hull only on completion. Destruction cancels paid jobs with no refund. Rebuilding starts at level 1. Capture clears ruins and incomplete jobs, with no inherited defenses or salvage. Additional planets cost 50% more per planet index (1×, 1.5×, 2×, 2.5×); effects add rather than multiply.

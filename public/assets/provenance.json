@@ -276,6 +276,22 @@
       "sourcePath": "src/assets/artwork/asteroid_small_03.webp",
       "purpose": "Original asteroid artwork for individually selectable mining sites; unchanged local copy",
       "sha256": "2b5a137e4e338a5e1228eca4d74653e0aca76e0f9fdaa0e986772b5e3cddb9b5"
+    },
+    {
+      "path": "public/assets/colony_orbital_defense_station_01.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/colony_orbital_defense_station_01.webp",
+      "sourceCommit": "097ded6f82bffbeb0957441e75b8818e07998bef",
+      "purpose": "Planetary defense inspector; unchanged owner-approved artwork",
+      "sha256": "21965bda7df1602d9c21cf95a969685feeebdb02b4d29f02f8386e567adedd74"
+    },
+    {
+      "path": "public/assets/colony_planetary_railgun_battery_01.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/colony_planetary_railgun_battery_01.webp",
+      "sourceCommit": "097ded6f82bffbeb0957441e75b8818e07998bef",
+      "purpose": "Planetary defense inspector; unchanged owner-approved artwork",
+      "sha256": "037290d0e8bd154dd2e7358980a326b5b664986172528c5ab281d797defa7a67"
     }
   ],
   "originalAssets": [

@@ -92,3 +92,7 @@ All assets below are **ORIGINAL SPACE WARS ASSET**. Their source is the checked-
 | `leviathan.svg`                          | Original Void Leviathan armored cosmic organism                       |
 
 Map capture arcs, fleet battle rings, weapon traces and score history charts are also original Space Wars code-native SVG overlays in `GalaxyMap.tsx` / `QuickConquest.tsx`. Existing Lucide glyphs continue under that dependency's license. The result uses **32 copied reference artwork files and 19 new original SVG files**. No reference repositories were edited, no backend assets/configuration were copied, and no unrelated franchise lore or creature art was introduced.
+
+## Economy and planetary defenses update
+
+Copied `colony_orbital_defense_station_01.webp` and `colony_planetary_railgun_battery_01.webp` unchanged from Web `src/assets/artwork/` at `097ded6f82bffbeb0957441e75b8818e07998bef` into Space Wars `public/assets/`. Both SHA-256 digests and source paths are in the manifest. Artwork is displayed in the planetary-defense inspector. The read-only Web `src/game/frontier/installations.ts` informed per-planet slots, paid construction/repair, persistent hull and upgrade condition preservation. Space Wars uses its own three-level, seconds-based, Credits/Alloy tuning and local combat integration; no runtime dependency on the reference was added.

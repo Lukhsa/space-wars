@@ -1,0 +1,527 @@
+[
+  {
+    "fleet": "frigates",
+    "counts": [
+      20,
+      0,
+      0,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "none",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 28
+  },
+  {
+    "fleet": "frigates",
+    "counts": [
+      20,
+      0,
+      0,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "station",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 27
+  },
+  {
+    "fleet": "frigates",
+    "counts": [
+      20,
+      0,
+      0,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "railgun",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 23
+  },
+  {
+    "fleet": "frigates",
+    "counts": [
+      20,
+      0,
+      0,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "combined",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 6.15,
+    "meanSeconds": 41.25
+  },
+  {
+    "fleet": "frigates",
+    "counts": [
+      20,
+      0,
+      0,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "maximum",
+    "matches": 20,
+    "captures": 0,
+    "meanLosses": 20,
+    "meanSeconds": 15.75
+  },
+  {
+    "fleet": "destroyers",
+    "counts": [
+      0,
+      10,
+      0,
+      0
+    ],
+    "alloy": 2800,
+    "defense": "none",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 26.3
+  },
+  {
+    "fleet": "destroyers",
+    "counts": [
+      0,
+      10,
+      0,
+      0
+    ],
+    "alloy": 2800,
+    "defense": "station",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 25
+  },
+  {
+    "fleet": "destroyers",
+    "counts": [
+      0,
+      10,
+      0,
+      0
+    ],
+    "alloy": 2800,
+    "defense": "railgun",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 22
+  },
+  {
+    "fleet": "destroyers",
+    "counts": [
+      0,
+      10,
+      0,
+      0
+    ],
+    "alloy": 2800,
+    "defense": "combined",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 34.2
+  },
+  {
+    "fleet": "destroyers",
+    "counts": [
+      0,
+      10,
+      0,
+      0
+    ],
+    "alloy": 2800,
+    "defense": "maximum",
+    "matches": 20,
+    "captures": 0,
+    "meanLosses": 10,
+    "meanSeconds": 17.3
+  },
+  {
+    "fleet": "cruisers",
+    "counts": [
+      0,
+      0,
+      5,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "none",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 25.8
+  },
+  {
+    "fleet": "cruisers",
+    "counts": [
+      0,
+      0,
+      5,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "station",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 24
+  },
+  {
+    "fleet": "cruisers",
+    "counts": [
+      0,
+      0,
+      5,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "railgun",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 22
+  },
+  {
+    "fleet": "cruisers",
+    "counts": [
+      0,
+      0,
+      5,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "combined",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 32.15
+  },
+  {
+    "fleet": "cruisers",
+    "counts": [
+      0,
+      0,
+      5,
+      0
+    ],
+    "alloy": 3000,
+    "defense": "maximum",
+    "matches": 20,
+    "captures": 0,
+    "meanLosses": 5,
+    "meanSeconds": 13.95
+  },
+  {
+    "fleet": "dreadnoughts",
+    "counts": [
+      0,
+      0,
+      0,
+      2
+    ],
+    "alloy": 2800,
+    "defense": "none",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 27.9
+  },
+  {
+    "fleet": "dreadnoughts",
+    "counts": [
+      0,
+      0,
+      0,
+      2
+    ],
+    "alloy": 2800,
+    "defense": "station",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 24
+  },
+  {
+    "fleet": "dreadnoughts",
+    "counts": [
+      0,
+      0,
+      0,
+      2
+    ],
+    "alloy": 2800,
+    "defense": "railgun",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 22
+  },
+  {
+    "fleet": "dreadnoughts",
+    "counts": [
+      0,
+      0,
+      0,
+      2
+    ],
+    "alloy": 2800,
+    "defense": "combined",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 35
+  },
+  {
+    "fleet": "dreadnoughts",
+    "counts": [
+      0,
+      0,
+      0,
+      2
+    ],
+    "alloy": 2800,
+    "defense": "maximum",
+    "matches": 20,
+    "captures": 0,
+    "meanLosses": 2,
+    "meanSeconds": 13.7
+  },
+  {
+    "fleet": "mixed",
+    "counts": [
+      4,
+      2,
+      1,
+      1
+    ],
+    "alloy": 3160,
+    "defense": "none",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0.1,
+    "meanSeconds": 26.35
+  },
+  {
+    "fleet": "mixed",
+    "counts": [
+      4,
+      2,
+      1,
+      1
+    ],
+    "alloy": 3160,
+    "defense": "station",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 24
+  },
+  {
+    "fleet": "mixed",
+    "counts": [
+      4,
+      2,
+      1,
+      1
+    ],
+    "alloy": 3160,
+    "defense": "railgun",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 22
+  },
+  {
+    "fleet": "mixed",
+    "counts": [
+      4,
+      2,
+      1,
+      1
+    ],
+    "alloy": 3160,
+    "defense": "combined",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 2.55,
+    "meanSeconds": 33.85
+  },
+  {
+    "fleet": "mixed",
+    "counts": [
+      4,
+      2,
+      1,
+      1
+    ],
+    "alloy": 3160,
+    "defense": "maximum",
+    "matches": 20,
+    "captures": 0,
+    "meanLosses": 8,
+    "meanSeconds": 13.75
+  },
+  {
+    "fleet": "siege",
+    "counts": [
+      6,
+      6,
+      10,
+      10
+    ],
+    "alloy": 22580,
+    "defense": "none",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 21
+  },
+  {
+    "fleet": "siege",
+    "counts": [
+      6,
+      6,
+      10,
+      10
+    ],
+    "alloy": 22580,
+    "defense": "station",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 20
+  },
+  {
+    "fleet": "siege",
+    "counts": [
+      6,
+      6,
+      10,
+      10
+    ],
+    "alloy": 22580,
+    "defense": "railgun",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 20
+  },
+  {
+    "fleet": "siege",
+    "counts": [
+      6,
+      6,
+      10,
+      10
+    ],
+    "alloy": 22580,
+    "defense": "combined",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 22.1
+  },
+  {
+    "fleet": "siege",
+    "counts": [
+      6,
+      6,
+      10,
+      10
+    ],
+    "alloy": 22580,
+    "defense": "maximum",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0.1,
+    "meanSeconds": 24
+  },
+  {
+    "fleet": "light",
+    "counts": [
+      5,
+      2,
+      0,
+      0
+    ],
+    "alloy": 1310,
+    "defense": "none",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 4.6,
+    "meanSeconds": 38.3
+  },
+  {
+    "fleet": "light",
+    "counts": [
+      5,
+      2,
+      0,
+      0
+    ],
+    "alloy": 1310,
+    "defense": "station",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0.85,
+    "meanSeconds": 33.6
+  },
+  {
+    "fleet": "light",
+    "counts": [
+      5,
+      2,
+      0,
+      0
+    ],
+    "alloy": 1310,
+    "defense": "railgun",
+    "matches": 20,
+    "captures": 20,
+    "meanLosses": 0,
+    "meanSeconds": 26
+  },
+  {
+    "fleet": "light",
+    "counts": [
+      5,
+      2,
+      0,
+      0
+    ],
+    "alloy": 1310,
+    "defense": "combined",
+    "matches": 20,
+    "captures": 0,
+    "meanLosses": 7,
+    "meanSeconds": 12.2
+  },
+  {
+    "fleet": "light",
+    "counts": [
+      5,
+      2,
+      0,
+      0
+    ],
+    "alloy": 1310,
+    "defense": "maximum",
+    "matches": 20,
+    "captures": 0,
+    "meanLosses": 7,
+    "meanSeconds": 7.65
+  }
+]

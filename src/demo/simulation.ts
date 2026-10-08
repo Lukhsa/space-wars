@@ -1,5 +1,6 @@
 // Browser and headless simulator share this fixed one-second local rules engine.
 import { BALANCE } from "./balance";
+import { activeDefenses, defensePower, defenseTick } from "./defenses";
 import { botTick } from "./ai";
 import { combatTick } from "./combat";
 import { routeFor, travelTime } from "./commands";
@@ -8,6 +9,7 @@ import {
   hasBonus,
   log,
   moving,
+  miningYield,
   refreshFleet,
   standings,
   syncPlayer,
@@ -66,7 +68,11 @@ function movementTick(s: DemoState, f: Fleet) {
       !moving(other),
   );
   // Hostile fleets intercept at intermediate systems. Lanes cannot skip battles.
-  if (hostile && !x.capital) f.route = [];
+  if (
+    (hostile || (x.owner !== f.owner && activeDefenses(x).length)) &&
+    !x.capital
+  )
+    f.route = [];
   if (f.route.length > 1) {
     f.duration = travelTime(s, f.route.slice(0, 2), f);
     return;
@@ -89,6 +95,7 @@ function movementTick(s: DemoState, f: Fleet) {
 }
 function economyTick(s: DemoState) {
   for (const c of s.commanders) {
+    const before = { ...c.resources };
     const owned = s.systems.filter((x) => x.owner === c.id),
       territory = external(s, c.id);
     c.stats.peak = Math.max(c.stats.peak, owned.length);
@@ -138,6 +145,8 @@ function economyTick(s: DemoState) {
       }
     }
     const forge = hasBonus(s, c.id, "forge") ? BALANCE.buffs.forge : 0;
+    for (const key of ["credits", "alloy", "fuel"] as const)
+      c.telemetry.passive[key] += c.resources[key] - before[key];
     for (const job of c.queue.slice(0, BALANCE.berths)) {
       job.elapsed +=
         1 +
@@ -148,6 +157,7 @@ function economyTick(s: DemoState) {
       if (job.elapsed >= job.duration) {
         c.reserve[shipClasses.indexOf(job.kind)]++;
         c.stats.built++;
+        c.telemetry.builtClasses[shipClasses.indexOf(job.kind)]++;
         log(
           s,
           "build",
@@ -167,7 +177,7 @@ function territoryTick(s: DemoState) {
     const present = s.fleets.filter((f) => f.system === x.id && !moving(f));
     x.defense = present
       .filter((f) => f.owner !== 0)
-      .reduce((n, f) => n + f.power, 0);
+      .reduce((n, f) => n + f.power, x.owner !== 0 ? defensePower(x) : 0);
     x.scouted = x.owner === 0 || (s.commanders[0].intel[x.id] ?? 0) > s.time;
     const owners = [...new Set(present.map((f) => f.owner))];
     const owner = owners[0];
@@ -177,6 +187,7 @@ function territoryTick(s: DemoState) {
       owner < 0 ||
       owner === undefined ||
       x.owner === owner ||
+      activeDefenses(x).length > 0 ||
       present.every((f) => f.mission === "scout" || f.retreatAt !== null)
     ) {
       x.capture = null;
@@ -188,6 +199,8 @@ function territoryTick(s: DemoState) {
     for (const f of present) if (f.retreatAt === null) f.status = "Capturing";
     if (x.capture.elapsed >= BALANCE.captureSeconds) {
       const old = x.owner;
+      x.installations = []; // Ruins and unfinished jobs yield no salvage or inherited structures.
+      if (old !== null) s.commanders[owner].telemetry.ownershipFlips++;
       x.owner = owner;
       x.capturedAt = s.time;
       x.capture = null;
@@ -218,6 +231,12 @@ function activityTick(s: DemoState) {
       continue;
     const c = s.commanders[f.owner],
       x = s.systems[f.system];
+    if (f.mission === "mine" && (x.owner !== f.owner || !x.asteroid)) {
+      f.repeatMining = false;
+      f.miningElapsed = 0;
+      f.mission = "defend";
+      f.status = "Idle";
+    }
     if (f.system === f.owner) {
       for (const u of f.units)
         u.hp = Math.min(
@@ -227,18 +246,28 @@ function activityTick(s: DemoState) {
       refreshFleet(f);
     }
     if (f.status === "Mining" && x.owner === f.owner && x.asteroid) {
+      // One extraction operation per system, even if a malformed save bypasses commands.
+      if (
+        s.fleets.some(
+          (other) =>
+            other.id < f.id &&
+            other.system === x.id &&
+            other.owner === f.owner &&
+            other.status === "Mining",
+        )
+      )
+        continue;
+      c.telemetry.miningSeconds++;
       f.miningElapsed++;
       if (f.miningElapsed >= BALANCE.miningSeconds) {
-        const alloy = Math.round(
-          x.richness *
-            (s.surgeUntil > s.time ? 1 + BALANCE.surge.alloy : 1) *
-            (hasBonus(s, f.owner, "titanium") ? 1 + BALANCE.buffs.titanium : 1),
-        );
+        const alloy = miningYield(s, f.owner, x);
         c.resources.alloy += alloy;
         c.resources.fuel += BALANCE.miningFuel;
         c.stats.mined += alloy + BALANCE.miningFuel;
+        c.telemetry.minedAlloy += alloy;
         f.miningElapsed = 0;
-        f.status = "Idle";
+        f.status = f.repeatMining ? "Mining" : "Idle";
+        if (!f.repeatMining) f.mission = "defend";
         log(
           s,
           "mining",
@@ -311,6 +340,7 @@ export function stepMatch(s: DemoState) {
   objectiveTick(s);
   for (const f of s.fleets) movementTick(s, f);
   combatTick(s);
+  defenseTick(s);
   territoryTick(s);
   activityTick(s);
   botTick(s);

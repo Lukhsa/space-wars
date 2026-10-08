@@ -63,7 +63,8 @@ export function travelTime(s: DemoState, route: number[], f?: Fleet) {
 export const fuelCost = (s: DemoState, f: Fleet, route: number[]) =>
   Math.ceil(
     Math.max(0, route.length - 1) *
-      BALANCE.fuelPerHop *
+      (BALANCE.fuelPerHop +
+        f.units.reduce((n, u) => n + BALANCE.fuelPerHull[u.kind], 0)) *
       (hasBonus(s, f.owner, "logistics") ? 1 - BALANCE.buffs.logistics : 1),
   );
 export function fleetPosition(
@@ -85,6 +86,7 @@ export function launchFleet(
   fleetId: number,
   target: number,
   mission: Mission,
+  repeatMining = false,
 ): string | null {
   const f = s.fleets.find((f) => f.id === fleetId),
     system = s.systems[target];
@@ -97,6 +99,19 @@ export function launchFleet(
     return "Home systems are protected from foreign fleets.";
   if (mission === "mine" && !system.asteroid)
     return "This system has no asteroid deposits.";
+  if (mission === "mine" && system.owner !== f.owner)
+    return "Control this system before mining.";
+  if (
+    mission === "mine" &&
+    s.fleets.some(
+      (x) =>
+        x.id !== f.id &&
+        x.owner === f.owner &&
+        x.mission === "mine" &&
+        (x.route.at(-1) ?? x.system) === target,
+    )
+  )
+    return "This system already has an extraction fleet assigned.";
   if (
     mission === "attack" &&
     system.owner === f.owner &&
@@ -110,9 +125,11 @@ export function launchFleet(
   if (c && c.resources.fuel < cost) return "Insufficient Fuel.";
   if (c) {
     c.resources.fuel -= cost;
+    c.telemetry.spent.fuel += cost;
     c.stats.orders++;
   }
   f.mission = mission;
+  f.repeatMining = mission === "mine" && repeatMining;
   if (mission === "scout" && route.length === 1 && c) {
     c.intel[target] = s.time + BALANCE.scoutingSeconds;
     if (f.owner === 0) system.scouted = true;
@@ -169,6 +186,8 @@ export function buildShip(
     return "Insufficient construction resources.";
   c.resources.credits -= spec.credits * quantity;
   c.resources.alloy -= spec.alloy * quantity;
+  c.telemetry.spent.credits += spec.credits * quantity;
+  c.telemetry.spent.alloy += spec.alloy * quantity;
   for (let i = 0; i < quantity; i++)
     c.queue.push({ id: ++s.serial, kind, elapsed: 0, duration: spec.seconds });
   log(
@@ -246,6 +265,9 @@ export function retreatFleet(s: DemoState, id: number): string | null {
   if (!route.length || s.commanders[f.owner].resources.fuel < cost)
     return "Insufficient Fuel for withdrawal home.";
   s.commanders[f.owner].resources.fuel -= cost;
+  s.commanders[f.owner].telemetry.spent.fuel += cost;
+  f.repeatMining = false;
+  f.miningElapsed = 0;
   f.retreatFuel = cost;
   f.retreatAt = s.time + BALANCE.retreatSeconds;
   f.status = "Retreating";
