@@ -9,6 +9,7 @@ export const BALANCE = {
   startingMiner: [2, 0, 0, 0],
   galaxy: { systems: 56, planetMinimum: 3, planetMaximum: 5, starScale: 1.15 },
   mining: {
+    perSystem: 3,
     credits: 250,
     alloy: 100,
     hull: 100,

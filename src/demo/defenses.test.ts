@@ -247,9 +247,11 @@ describe("repeat mining and economy", () => {
     run(s, 60);
     expect(s.commanders[0].telemetry.minedAlloy).toBe(3 * d.richness);
   });
-  it("limits each controlled system to one civilian miner and rejects military extraction", () => {
+  it("limits each controlled system to three civilian miners and rejects military extraction", () => {
     const s = quiet();
-    expect(commissionMiner(s, 0, 0)).toMatch(/already/);
+    expect(commissionMiner(s, 0, 0)).toBeNull();
+    expect(commissionMiner(s, 0, 0)).toBeNull();
+    expect(commissionMiner(s, 0, 0)).toMatch(/all 3/);
     expect(commissionMiner(s, 0, 9)).toMatch(/majority/);
     expect(launchFleet(s, s.fleets[0].id, 0, "mine")).toMatch(/civilian/);
   });

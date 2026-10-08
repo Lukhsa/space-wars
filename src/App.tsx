@@ -88,6 +88,7 @@ import type {
 } from "./demo/types";
 
 const format = (n: number) => Math.floor(n).toLocaleString("en-US");
+const rate = (n: number) => (n / 60).toFixed(2).replace(/\.?0+$/, "");
 const time = (n: number) => {
   const seconds = Math.ceil(Math.max(0, n));
   return `${Math.floor(seconds / 60)
@@ -330,6 +331,7 @@ export default function App({
       ? routeFor(state, selectedOrderFleet, order.target)
       : [];
   const ownedCount = state.systems.filter((s) => s.owner === 0).length;
+  const income = incomePerMinute(state, 0);
   const inspect = useCallback((id: number, belt = false) => {
     setSelectionKind(belt ? "deposit" : "planet");
     setSelectedMiner(null);
@@ -508,7 +510,12 @@ export default function App({
                 {format(state.resources.credits)}
               </strong>
             </span>
-            <em>+{format(incomePerMinute(state, 0).credits)}/m</em>
+            <em
+              data-testid="credits-rate"
+              title="Passive Credits from owned planets per second"
+            >
+              +{rate(income.credits)}/s
+            </em>
           </div>
           <div>
             <Boxes className="blue" size={18} />
@@ -518,13 +525,25 @@ export default function App({
                 {format(state.resources.alloy)}
               </strong>
             </span>
+            <em
+              data-testid="alloy-rate"
+              title="Passive Alloy from owned planets per second. Mining cargo is added on delivery."
+            >
+              +{rate(income.alloy)}/s
+            </em>
           </div>
           <div>
             <Fuel className="green" size={17} />
             <span>
               <small>FUEL</small>
-              <strong>{format(state.resources.fuel)}</strong>
+              <strong data-testid="fuel">{format(state.resources.fuel)}</strong>
             </span>
+            <em
+              data-testid="fuel-rate"
+              title="Passive Fuel from owned planets per second"
+            >
+              +{rate(income.fuel)}/s
+            </em>
           </div>
           <div className="power-resource">
             <Shield size={18} />
@@ -763,20 +782,20 @@ export default function App({
                 </div>
                 <div className="resource-output">
                   <span className="eyebrow">
-                    PLANET OUTPUT <small>/ MIN</small>
+                    PLANET DEPOSITS <small>/ SEC</small>
                   </span>
                   <div>
                     <span>
                       <Coins size={13} />+
-                      {format(s.output[0] / s.planets.length)}
+                      {rate(s.planets[selectedPlanet]?.output[0] ?? 0)}
                     </span>
                     <span>
                       <Boxes size={13} />+
-                      {format(s.output[1] / s.planets.length)}
+                      {rate(s.planets[selectedPlanet]?.output[1] ?? 0)}
                     </span>
                     <span>
                       <Fuel size={13} />+
-                      {format(s.output[2] / s.planets.length)}
+                      {rate(s.planets[selectedPlanet]?.output[2] ?? 0)}
                     </span>
                   </div>
                 </div>
@@ -804,6 +823,11 @@ export default function App({
                   state={state}
                   system={selected}
                   deposit={selectedDeposit}
+                  selectedMiner={selectedMiner}
+                  onMiner={(id) => {
+                    setSelectedMiner(id);
+                    setSelectionKind("miner");
+                  }}
                   mutate={mutate}
                 />
               ) : own ? (

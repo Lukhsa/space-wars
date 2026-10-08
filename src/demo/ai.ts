@@ -71,13 +71,31 @@ export function botTick(s: DemoState) {
       const pirates = s.fleets.some(
         (f) => f.system === x.id && f.neutral === "pirates",
       );
-      let miner = s.miners.find((m) => m.system === x.id && m.owner === c.id);
-      if (!miner && !pirates && c.resources.alloy > 400) {
+      let miners = s.miners.filter(
+        (m) => m.system === x.id && m.owner === c.id,
+      );
+      const target =
+        s.time > 600 ? BALANCE.mining.perSystem : s.time > 180 ? 2 : 1;
+      if (
+        miners.length < target &&
+        x.deposits.length > miners.length &&
+        !pirates &&
+        c.resources.alloy > 400 &&
+        c.resources.credits > 500
+      ) {
         commissionMiner(s, c.id, x.id);
-        miner = s.miners.find((m) => m.system === x.id);
+        miners = s.miners.filter((m) => m.system === x.id && m.owner === c.id);
       }
-      if (miner?.status === "Idle" && x.deposits.length && !pirates)
-        orderMiner(s, c.id, x.id, x.deposits[0].id, true);
+      for (const [i, miner] of miners.entries())
+        if (miner.status === "Idle" && x.deposits.length && !pirates)
+          orderMiner(
+            s,
+            c.id,
+            x.id,
+            x.deposits[i % x.deposits.length].id,
+            true,
+            miner.id,
+          );
     }
     if (
       c.resources.alloy > 650 &&

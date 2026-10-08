@@ -2,7 +2,7 @@ import { BALANCE, type Strategic } from "./balance";
 import { randomFrom } from "./random";
 import { distance } from "./routes";
 import { makeFleet } from "./model";
-import { makePlanet } from "./planets";
+import { makePlanet, seedPlanetOutput } from "./planets";
 import { seedDeposits, makeMiner } from "./mining";
 import { homeDefenses } from "./defenses";
 import type { Commander, DemoState, Lane, Personality, System } from "./types";
@@ -190,6 +190,7 @@ export function generateGalaxy(
         s.star = id;
         s.belts = 1;
       }
+      seedPlanetOutput(s);
       seedDeposits(s, seed);
       return s;
     },

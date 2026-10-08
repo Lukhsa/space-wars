@@ -14,6 +14,8 @@ export type Resources = { credits: number; alloy: number; fuel: number };
 export type ShipUnit = { kind: number; hp: number };
 export type DefenseKind = "station" | "railgun";
 export interface Planet {
+  /** Passive Credits, Alloy and Fuel per minute from this world's deposits. */
+  output: [number, number, number];
   id: number;
   art: number;
   owner: number | null;
@@ -30,6 +32,9 @@ export interface Deposit extends Point {
   slot: number;
 }
 export interface Miner {
+  berth: number;
+  site: Point | null;
+  travel: number;
   id: number;
   owner: number;
   system: number;

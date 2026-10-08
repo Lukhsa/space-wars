@@ -1,7 +1,7 @@
 import { BALANCE } from "./balance";
 import { randomFrom } from "./random";
 import { log, moving } from "./model";
-import { planetOffset } from "./planets";
+import { planetOffset, planetPosition } from "./planets";
 import type { DemoState, Miner, System } from "./types";
 export function spawnDeposit(system: System, seed: string, time: number) {
   if (system.deposits.length >= BALANCE.mining.maximumDeposits) return;
@@ -48,6 +48,15 @@ export const makeMiner = (
   owner: number,
   system: number,
 ): Miner => ({
+  berth:
+    Array.from({ length: BALANCE.mining.perSystem }, (_, i) => i).find(
+      (i) =>
+        !s.miners.some(
+          (m) => m.system === system && m.owner === owner && m.berth === i,
+        ),
+    ) ?? 0,
+  site: null,
+  travel: 0,
   id: ++s.serial,
   owner,
   system,
@@ -67,8 +76,11 @@ export function commissionMiner(
     c = s.commanders[owner];
   if (s.status !== "playing" || !c || x?.owner !== owner)
     return "Control a majority of this system to commission its mining craft.";
-  if (s.miners.some((m) => m.system === system))
-    return "This system already has a mining craft.";
+  if (
+    s.miners.filter((m) => m.system === system && m.owner === owner).length >=
+    BALANCE.mining.perSystem
+  )
+    return `This system has all ${BALANCE.mining.perSystem} mining craft.`;
   if (
     c.resources.credits < BALANCE.mining.credits ||
     c.resources.alloy < BALANCE.mining.alloy
@@ -87,28 +99,70 @@ export function orderMiner(
   system: number,
   deposit: number,
   repeat = true,
+  minerId?: number,
 ): string | null {
-  const m = s.miners.find((m) => m.system === system && m.owner === owner),
+  const m = s.miners.find(
+      (m) =>
+        m.system === system &&
+        m.owner === owner &&
+        (minerId === undefined ? m.status === "Idle" : m.id === minerId),
+    ),
     x = s.systems[system];
   if (s.status !== "playing" || !m || x.owner !== owner)
     return "A controlled system and its mining craft are required.";
   if (m.status !== "Idle")
     return "The mining craft is already on an expedition.";
-  if (!x.deposits.some((d) => d.id === deposit && d.reserves > 0))
-    return "Deposit unavailable.";
+  const d = x.deposits.find((d) => d.id === deposit && d.reserves > 0);
+  if (!d) return "Deposit unavailable.";
   m.deposit = deposit;
+  m.site = { x: d.x, y: d.y };
+  m.travel = 0;
   m.repeat = repeat;
   m.elapsed = 0;
   m.status = "Outbound";
   return null;
 }
-export function recallMiner(s: DemoState, owner: number, system: number) {
-  const m = s.miners.find((m) => m.owner === owner && m.system === system);
+export function recallMiner(
+  s: DemoState,
+  owner: number,
+  system: number,
+  minerId?: number,
+) {
+  const m = s.miners.find(
+    (m) =>
+      m.owner === owner &&
+      m.system === system &&
+      (minerId === undefined || m.id === minerId),
+  );
   if (s.status !== "playing" || !m) return "Mining craft unavailable.";
   m.repeat = false;
   m.elapsed = 0;
-  m.status = m.cargo > 0 ? "Returning" : "Idle";
+  m.status = m.travel > 0 ? "Returning" : "Idle";
   return null;
+}
+export function minerPosition(s: DemoState, m: Miner) {
+  const x = s.systems[m.system];
+  const base = planetPosition(
+    x,
+    x.planets.find((p) => p.owner === m.owner)?.id ?? 0,
+  );
+  const end = m.site ? { x: x.x + m.site.x, y: x.y + m.site.y } : base;
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      m.travel +
+        (m.status === "Outbound"
+          ? s.accumulator / BALANCE.mining.outbound
+          : m.status === "Returning"
+            ? -s.accumulator / BALANCE.mining.returning
+            : 0),
+    ),
+  );
+  return {
+    x: base.x + (end.x - base.x) * t + m.berth * 42,
+    y: base.y + (end.y - base.y) * t + 32,
+  };
 }
 export function miningTick(s: DemoState) {
   for (const x of s.systems)
@@ -132,10 +186,16 @@ export function miningTick(s: DemoState) {
     }
     if (m.status === "Idle") {
       m.hp = Math.min(BALANCE.mining.hull, m.hp + 2);
+      if (m.repeat && x.deposits.length)
+        orderMiner(s, m.owner, m.system, x.deposits[0].id, true, m.id);
       continue;
     }
     c.telemetry.miningSeconds++;
     m.elapsed++;
+    if (m.status === "Outbound")
+      m.travel = Math.min(1, m.travel + 1 / BALANCE.mining.outbound);
+    if (m.status === "Returning")
+      m.travel = Math.max(0, m.travel - 1 / BALANCE.mining.returning);
     if (m.status === "Outbound" && m.elapsed >= BALANCE.mining.outbound) {
       m.status = "Extracting";
       m.elapsed = 0;
@@ -145,7 +205,7 @@ export function miningTick(s: DemoState) {
     ) {
       const d = x.deposits.find((d) => d.id === m.deposit);
       if (!d) {
-        m.status = "Idle";
+        m.status = "Returning";
         m.elapsed = 0;
         continue;
       }
@@ -191,10 +251,7 @@ export function miningTick(s: DemoState) {
     ) {
       m.status = "Returning";
       m.elapsed = 0;
-    } else if (
-      m.status === "Returning" &&
-      m.elapsed >= BALANCE.mining.returning
-    ) {
+    } else if (m.status === "Returning" && m.travel <= 0) {
       c.resources.alloy += m.cargo;
       c.stats.mined += m.cargo;
       c.telemetry.minedAlloy += m.cargo;
@@ -212,6 +269,7 @@ export function miningTick(s: DemoState) {
       const next = x.deposits.find((d) => d.id === m.deposit) ?? x.deposits[0];
       if (m.repeat && next && m.hp > 0) {
         m.deposit = next.id;
+        m.site = { x: next.x, y: next.y };
         m.status = "Outbound";
       }
     }

@@ -7,6 +7,7 @@ import { routeFor, travelTime } from "./commands";
 import {
   external,
   hasBonus,
+  incomePerMinute,
   log,
   moving,
   refreshFleet,
@@ -102,18 +103,10 @@ function economyTick(s: DemoState) {
       );
     }
     const recovering = c.recoveryUntil > s.time;
+    const income = incomePerMinute(s, c.id);
+    for (const key of ["credits", "alloy", "fuel"] as const)
+      c.resources[key] += income[key] / 60;
     for (const { system: x } of ownedPlanets(s, c.id)) {
-      const multiplier =
-        x.capital && recovering ? 1 + BALANCE.recovery.income : 1;
-      c.resources.credits +=
-        (x.output[0] / x.planets.length / 60) *
-        multiplier *
-        (hasBonus(s, c.id, "trade") ? 1 + BALANCE.buffs.trade : 1);
-      c.resources.alloy +=
-        (x.output[1] / x.planets.length / 60) *
-        multiplier *
-        (hasBonus(s, c.id, "titanium") ? 1 + BALANCE.buffs.titanium : 1);
-      c.resources.fuel += (x.output[2] / x.planets.length / 60) * multiplier;
       if (!x.capital) {
         const rate =
           x.region === "Core"

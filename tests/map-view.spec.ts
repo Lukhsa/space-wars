@@ -102,7 +102,7 @@ test("small deposits select civilian mining without a military order dialog", as
   await page.goto("/");
   await page.locator(".asteroid-opportunity").click();
   const miner = page.getByRole("region", { name: "Civilian mining" });
-  await expect(miner).toContainText("ONE CRAFT PER SYSTEM");
+  await expect(miner).toContainText("1/3 CRAFT");
   await page.getByRole("button", { name: "Mine once", exact: true }).click();
   await expect(miner).toContainText("Outbound");
   await expect(page.getByRole("dialog")).toHaveCount(0);

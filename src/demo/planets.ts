@@ -29,6 +29,7 @@ export function makePlanet(
   shipyard = false,
 ): Planet {
   return {
+    output: [0, 0, 0],
     id,
     art,
     owner,
@@ -38,6 +39,38 @@ export function makePlanet(
     reserve: [0, 0, 0, 0],
     queue: [],
   };
+}
+export function seedPlanetOutput(system: System) {
+  // Habitable worlds favor Credits, rocky worlds Alloy, gas/ice worlds Fuel.
+  const weights = [
+    [5, 2, 1],
+    [5, 2, 1],
+    [3, 1, 3],
+    [2, 4, 1],
+    [1, 2, 5],
+    [1, 5, 2],
+    [1, 1, 6],
+    [3, 5, 1],
+  ];
+  for (const resource of [0, 1, 2] as const) {
+    const total = system.planets.reduce(
+      (n, p) => n + weights[p.art][resource],
+      0,
+    );
+    const shares = system.planets.map((planet) => {
+      const exact =
+        (system.output[resource] * weights[planet.art][resource]) / total;
+      planet.output[resource] = Math.floor(exact);
+      return { planet, remainder: exact - Math.floor(exact) };
+    });
+    const remaining =
+      system.output[resource] -
+      system.planets.reduce((n, p) => n + p.output[resource], 0);
+    shares.sort(
+      (a, b) => b.remainder - a.remainder || a.planet.id - b.planet.id,
+    );
+    for (let i = 0; i < remaining; i++) shares[i].planet.output[resource]++;
+  }
 }
 export function planetOffset(system: System, id: number) {
   if (id < 0) return { x: 240, y: -80 };

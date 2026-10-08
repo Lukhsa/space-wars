@@ -553,8 +553,7 @@
 }
 @media (max-width: 1200px) {
   .profile,
-  .power-resource,
-  .resources em {
+  .power-resource {
     display: none !important;
   }
   .resources {
@@ -879,4 +878,37 @@
   height: 112px;
   object-fit: contain;
   margin: 12px auto;
+}
+.miner-picker {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0;
+}
+.miner-picker select {
+  width: 100%;
+  padding: 8px;
+  color: var(--text);
+  background: #10232e;
+  border: 1px solid #395362;
+}
+.resources > div {
+  position: relative;
+  padding-bottom: 10px;
+}
+.resources em {
+  display: block;
+  position: absolute;
+  bottom: -2px;
+  right: 16px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .resources > div {
+    padding-bottom: 10px;
+  }
+  .resources em {
+    right: 0;
+    font-size: 8px;
+  }
 }

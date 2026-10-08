@@ -1,4 +1,5 @@
 import { planetPosition, planetName } from "../demo/planets";
+import { minerPosition } from "../demo/mining";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Crosshair,
@@ -947,26 +948,14 @@ export default function GalaxyMap({
             .filter((m) => m.owner === 0 || state.devReveal)
             .map((m) => {
               const x = state.systems[m.system],
-                base = planetPosition(
-                  x,
-                  x.planets.find((p) => p.owner === m.owner)?.id ?? 0,
-                ),
-                d = x.deposits.find((d) => d.id === m.deposit),
-                end = d
-                  ? { x: x.x + d.x, y: x.y + d.y }
-                  : { x: x.x + 100, y: x.y };
-              const t =
-                m.status === "Idle"
-                  ? 0
-                  : m.status === "Outbound"
-                    ? m.elapsed / 8
-                    : m.status === "Returning"
-                      ? 1 - m.elapsed / 8
-                      : 1;
+                p = minerPosition(state, m);
               return (
                 <g
                   key={m.id}
-                  transform={`translate(${base.x + (end.x - base.x) * t} ${base.y + (end.y - base.y) * t + 25})`}
+                  style={{
+                    transform: `translate(${p.x}px, ${p.y}px)`,
+                    transition: paused ? "none" : "transform 210ms linear",
+                  }}
                   role="button"
                   tabIndex={0}
                   className="miner-marker map-object"
@@ -974,7 +963,11 @@ export default function GalaxyMap({
                     selectionKind === "miner" && selectedMiner === m.id
                   }
                   data-miner={m.id}
-                  aria-label={x.name + " civilian miner"}
+                  aria-label={
+                    x.name +
+                    " civilian miner" +
+                    (m.berth ? ` ${m.berth + 1}` : "")
+                  }
                   onClick={(e) => {
                     e.stopPropagation();
                     if (!drag.current.moved) onMiner(m.id);
@@ -1004,7 +997,7 @@ export default function GalaxyMap({
                     height="36"
                   />
                   <text y="22" textAnchor="middle" fontSize="9" fill="#dfc88f">
-                    MINER · {m.status.toUpperCase()}
+                    MINER {m.berth + 1} · {m.status.toUpperCase()}
                   </text>
                 </g>
               );

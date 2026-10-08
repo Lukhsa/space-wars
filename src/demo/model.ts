@@ -193,11 +193,11 @@ export function syncPlayer(s: DemoState) {
 export function incomePerMinute(s: DemoState, owner: number): Resources {
   const income = { credits: 0, alloy: 0, fuel: 0 };
   const recovery = s.commanders[owner].recoveryUntil > s.time;
-  for (const { system: x } of ownedPlanets(s, owner)) {
+  for (const { system: x, planet } of ownedPlanets(s, owner)) {
     const boost = x.capital && recovery ? 1 + BALANCE.recovery.income : 1;
-    income.credits += (x.output[0] * boost) / x.planets.length;
-    income.alloy += (x.output[1] * boost) / x.planets.length;
-    income.fuel += (x.output[2] * boost) / x.planets.length;
+    income.credits += planet.output[0] * boost;
+    income.alloy += planet.output[1] * boost;
+    income.fuel += planet.output[2] * boost;
   }
   if (hasBonus(s, owner, "trade")) income.credits *= 1 + BALANCE.buffs.trade;
   if (hasBonus(s, owner, "titanium"))

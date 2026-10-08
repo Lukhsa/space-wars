@@ -1,0 +1,11 @@
+# Miners and planet income playtest update
+
+Controlled systems support three civilian miners. The starting home miner remains free; each additional craft costs 250 Credits and 100 Alloy. The mining panel selects individual craft for one trip, repeat mining or recall. Ships have distinct berths and separate cargo; simultaneous extraction consumes the same finite reserves without duplication. Repeat orders wait for replenishment when no deposits remain. AI expands to two miners after three minutes and three after ten minutes when resources and safe deposits permit.
+
+Miner positions interpolate between simulation ticks with the same short CSS transition as military ships. Travel progress and the destination survive asteroid depletion, and recalled ships return from their current progress. Pause stops transitions. The 8-second outbound, 24-second extraction and 8-second return timings remain unchanged for full trips.
+
+Each planet now has its own permanent Credits, Alloy and Fuel yield, weighted by world type. Habitable worlds favor Credits, rocky worlds Alloy, and gas/ice worlds Fuel. The sum remains the existing system budget, preserving starting and regional income balance. Capturing a planet grants its yield even without a system majority; losing it transfers that yield to the new owner. These passive planetary deposits do not deplete. Asteroid deposits still deplete and replenish.
+
+The header shows total passive income per second for all three resources, including active economic bonuses, on desktop and phone. The selected planet shows its base yields per second. Mining cargo remains a delivery reward rather than a guaranteed passive rate. The same income function now powers the HUD and the simulation to prevent drift between displayed and paid income.
+
+Validation: 68 game-rule tests and eight relevant browser scenarios pass across the full runs and targeted reruns. TypeScript, ESLint and production build are checked. Browser coverage includes three independent miner orders, individual recall, faction selection, desktop/mobile map layout, visible income rates, grouped fleet orders and forward shipyard production. Screenshots: `docs/screenshots/three-miners.png` and `docs/screenshots/income-mobile.png`.
