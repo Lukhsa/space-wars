@@ -17,16 +17,20 @@ Open **http://127.0.0.1:5173/**. A match starts immediately. Refresh resets it; 
 
 ## Your first match
 
-1. Select **1st Expeditionary**, search for **Nexus**, then **Claim system → Launch assault**. Hold the cleared system for 20 seconds to gain its worlds, income and score.
-2. Select **Mining Group Alpha**, open **Nova Prime Belt**, and **Send mining fleet**. A 40-second home cycle yields 90 Alloy. Choose Mine once or Continue mining; richer contested fields yield more. One extraction fleet per system.
-3. **Build a ship** supports quantities of 1, 2, 3 or 5. Two berths work through a ten-ship queue. **Fleets** lets you allocate reserve hulls to a new fleet or reinforce a fleet at home.
-4. Scout before fighting. **Caldera** and the other contested middle systems hold pirates and strategic bonuses. Hostile fleets intercept at intermediate systems on a route.
-5. During battle, select your fleet and choose **Aggressive**, **Defensive**, **Focus capitals**, **Focus escorts**, or **Retreat**. Withdrawal takes six exposed seconds, then the survivors travel home. The rest of the galaxy remains usable.
-6. Watch **Standings**, **Global Chat**, the event log and the objective indicators. At 15 minutes the Guardian awakens; at 25 minutes the Leviathan appears; the final five minutes double Core score.
+1. Click **1st Expeditionary**, search for **Nexus**, then click an individual planet. Shift-click adds fleets to the selection; Escape clears it. The inspector also provides **Claim planet → Launch assault**.
+2. Hold an uncontested planet for 20 seconds. Each system has 3–5 planets; strict majority (2/3, 3/4, 3/5) grants system control. Other owners keep their remaining planets. Suns are landmarks.
+3. Open a home asteroid deposit and choose **Mine once** or **Continue mining**. A separate civilian miner extracts and returns cargo in 40 seconds. Each controlled system supports one miner; a new craft costs 250 Credits / 100 Alloy.
+4. **Build a ship** lets you select an owned shipyard planet. Completed ships enter that yard’s reserve. **Fleets** selects a yard for formation, or reinforces a fleet docked at any owned yard.
+5. Seeded pirates guard resource lanes beyond your two neutral starting buffers. They intercept mining returns, steal cargo and damage miners. **Attack resource-lane hostiles** clears the route; pirates regroup four minutes after destruction.
+6. Planetary battles begin with a six-second approach. Choose a stance, including **Focus defenses**, and watch volleys, losses and fleet power. Retreat takes six seconds. Stations and railguns defend only their own planet.
+7. Highest Dominion at 40 minutes wins. Holding 29 of 48 external systems for 75 seconds wins early. Guardian, Leviathan and Core events remain active.
 
 Drag to pan, scroll to zoom, or use the minimap. Arrow keys pan a focused map; `+` / `-` zoom and `Home` returns home. Close zoom reveals planets and asteroid fields around each star. The sidebars scroll on shorter screens.
 
 ## Rules and verification
+
+- **Current planet-conquest playtest:** [rules and validation](docs/PLANET_PLAYTEST_REPORT.md), [design contracts](docs/PLANET_CONQUEST_DESIGN.md), [six simulations](docs/PLANET_PLAYTEST_SIMULATIONS.json). This replaces earlier whole-system conquest and combat-fleet mining.
+
 
 - [Complete rules, exact balance, controls and shortcuts](docs/QUICK_CONQUEST_PROTOTYPE.md)
 - [Validation, gameplay observations and remaining issues](docs/PHASE2_VALIDATION.md)
@@ -52,7 +56,7 @@ npm run simulate -- MY-SEED --duration=600
 | File                                                    | Responsibility                                                                             |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | `src/demo/balance.ts`                                   | Central ship stats, timings, costs, income, score, buffs and objective balance             |
-| `src/demo/galaxy.ts`, `random.ts`, `routes.ts`          | Seeded 28-system generation and lane routing                                               |
+| `src/demo/galaxy.ts`, `random.ts`, `routes.ts`          | Seeded 56-system generation and lane routing                                               |
 | `src/demo/commands.ts`                                  | Shared human/bot build, formation, movement, retreat and stance commands                   |
 | `src/demo/simulation.ts`                                | Fixed one-second economy, movement, capture, mining, scoring and match lifecycle           |
 | `src/demo/combat.ts`                                    | Per-ship hull damage, simultaneous volleys, casualties and rewards                         |

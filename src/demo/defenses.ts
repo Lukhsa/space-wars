@@ -12,22 +12,27 @@ export const defenseAssets = {
 };
 export const defenseSpec = (kind: DefenseKind, level: number) =>
   BALANCE.defenses[kind][level - 1];
-export const activeDefenses = (x: System) =>
-  x.installations.filter((d) => d.level > 0 && d.hp > 0);
-export const defensePower = (x: System) =>
-  activeDefenses(x).reduce(
+export const activeDefenses = (x: System, planet?: number) =>
+  x.installations.filter(
+    (d) =>
+      d.level > 0 && d.hp > 0 && (planet === undefined || d.planet === planet),
+  );
+export const defensePower = (x: System, planet?: number) =>
+  activeDefenses(x, planet).reduce(
     (n, d) =>
       n +
       (defenseSpec(d.kind, d.level).power * d.hp) /
         defenseSpec(d.kind, d.level).hull,
     0,
   );
-export const contested = (s: DemoState, x: System) =>
+export const contested = (s: DemoState, x: System, planet?: number) =>
   s.fleets.some(
     (f) =>
       f.system === x.id &&
       f.route.length < 2 &&
-      f.owner !== x.owner &&
+      (planet === undefined
+        ? x.planets.some((p) => p.id === f.planet && p.owner !== f.owner)
+        : f.planet === planet && f.owner !== x.planets[planet]?.owner) &&
       f.units.length > 0,
   );
 export function defenseQuote(
@@ -67,7 +72,7 @@ export function constructDefense(
 ): string | null {
   const x = s.systems[system],
     c = s.commanders[owner];
-  if (s.status !== "playing" || !c || !x || x.owner !== owner)
+  if (s.status !== "playing" || !c || !x || x.planets[planet]?.owner !== owner)
     return "Select a planet in your territory.";
   if (
     !defenseKinds.includes(kind) ||
@@ -76,14 +81,15 @@ export function constructDefense(
     planet >= x.planets.length
   )
     return "Invalid planetary slot.";
-  if (contested(s, x))
+  if (contested(s, x, planet))
     return "Construction is suspended while enemies are present.";
   if (x.installations.some((d) => d.job))
     return "This system's construction lane is occupied.";
   if (
     s.systems
-      .filter((x) => x.owner === owner)
-      .flatMap((x) => x.installations)
+      .flatMap((x) =>
+        x.installations.filter((d) => x.planets[d.planet].owner === owner),
+      )
       .filter((d) => d.job).length >= BALANCE.defenses.concurrentJobs
   )
     return "Two defense construction crews are already deployed.";
@@ -112,11 +118,12 @@ export function constructDefense(
 }
 export function defenseTick(s: DemoState) {
   for (const x of s.systems) {
-    if (x.owner === null || contested(s, x)) continue;
     for (const d of x.installations) {
+      const owner = x.planets[d.planet].owner;
+      if (owner === null || contested(s, x, d.planet)) continue;
       const j = d.job;
       if (!j || ++j.elapsed < j.duration) continue;
-      const t = s.commanders[x.owner].telemetry;
+      const t = s.commanders[owner].telemetry;
       if (j.action === "repair") t.repairs++;
       else if (j.action === "upgrade") t.defensesUpgraded++;
       else t.defensesBuilt++;

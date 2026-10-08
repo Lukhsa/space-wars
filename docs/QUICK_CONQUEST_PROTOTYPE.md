@@ -1,3 +1,5 @@
+> Historical rules/report. The current playtest uses [planet conquest, civilian mining and forward shipyards](PLANET_PLAYTEST_REPORT.md). Values and measurements below describe the earlier implementation.
+
 # Quick Conquest local prototype
 
 The economy/defense update implements `prompt_03.txt`; exact balance, verification and limitations are recorded in [ECONOMY_DEFENSE_BALANCE_REPORT.md](ECONOMY_DEFENSE_BALANCE_REPORT.md).

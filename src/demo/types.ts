@@ -2,12 +2,44 @@ export type Point = { x: number; y: number };
 import type { Strategic } from "./balance";
 export type Mission = "move" | "attack" | "mine" | "scout" | "defend";
 export type Stance =
-  "Balanced" | "Aggressive" | "Defensive" | "Focus capitals" | "Focus escorts";
+  | "Balanced"
+  | "Aggressive"
+  | "Defensive"
+  | "Focus capitals"
+  | "Focus escorts"
+  | "Focus defenses";
 export type Personality =
   "Expansionist" | "Aggressor" | "Industrialist" | "Turtle" | "Opportunist";
 export type Resources = { credits: number; alloy: number; fuel: number };
 export type ShipUnit = { kind: number; hp: number };
 export type DefenseKind = "station" | "railgun";
+export interface Planet {
+  id: number;
+  art: number;
+  owner: number | null;
+  capture: { owner: number; elapsed: number } | null;
+  capturedAt: number;
+  shipyard: boolean;
+  reserve: number[];
+  queue: BuildJob[];
+}
+export interface Deposit extends Point {
+  id: number;
+  richness: number;
+  reserves: number;
+  slot: number;
+}
+export interface Miner {
+  id: number;
+  owner: number;
+  system: number;
+  deposit: number | null;
+  status: "Idle" | "Outbound" | "Extracting" | "Returning" | "Intercepted";
+  elapsed: number;
+  cargo: number;
+  hp: number;
+  repeat: boolean;
+}
 export interface Installation {
   planet: number;
   kind: DefenseKind;
@@ -99,7 +131,9 @@ export interface System extends Point {
   capturedAt: number;
   output: [number, number, number];
   star: number;
-  planets: number[];
+  planets: Planet[];
+  deposits: Deposit[];
+  nextDeposit: number;
   belts: number;
   region: "Home" | "Frontier" | "Mid" | "Core";
   strategic?: Strategic;
@@ -111,6 +145,8 @@ export interface Lane {
   length: number;
 }
 export interface Fleet {
+  planet: number;
+  targetPlanet: number;
   id: number;
   name: string;
   owner: number;
@@ -167,6 +203,8 @@ export interface Report {
   time: number;
 }
 export interface DemoState {
+  miners: Miner[];
+  pirateCamps: { system: number; tier: number; nextSpawn: number }[];
   seed: string;
   systems: System[];
   lanes: Lane[];
@@ -206,6 +244,8 @@ export interface Objective {
   nextMove: number;
 }
 export interface Battle {
+  planet: number;
+  shots: { from: number; to: number; damage: number; railgun: boolean }[];
   id: number;
   system: number;
   owners: number[];

@@ -78,7 +78,7 @@ export function objectiveTick(s: DemoState) {
       s,
       "world",
       "Core Ascendancy active",
-      "All four Core systems now generate double Dominion.",
+      "All eight Core systems now generate double Dominion.",
       24,
       true,
       true,
@@ -96,7 +96,7 @@ export function objectiveTick(s: DemoState) {
       const r = randomFrom(`${s.seed}:leviathan:${s.time}`),
         target = options[Math.floor(r() * options.length)];
       if (target !== undefined) {
-        launchFleet(s, f.id, target, "move");
+        launchFleet(s, f.id, target, "move", false, -1);
         log(
           s,
           "world",
@@ -110,19 +110,34 @@ export function objectiveTick(s: DemoState) {
       o.nextMove = s.time + BALANCE.leviathan.moveInterval;
     }
   }
-  if (s.time >= s.nextRaid) {
-    s.nextRaid += BALANCE.pirates.raidInterval;
-    const raiders = s.fleets.filter(
-      (f) => f.neutral === "pirates" && !moving(f) && f.status !== "Battle",
-    );
-    const random = randomFrom(`${s.seed}:raid:${s.time}`),
-      raider = raiders[Math.floor(random() * raiders.length)];
-    if (raider) {
-      const target = s.lanes
-        .filter((l) => l.a === raider.system || l.b === raider.system)
-        .map((l) => s.systems[l.a === raider.system ? l.b : l.a])
-        .find((x) => !x.capital && x.owner !== null);
-      if (target) launchFleet(s, raider.id, target.id, "attack");
+  for (const camp of s.pirateCamps) {
+    if (
+      s.fleets.some((f) => f.neutral === "pirates" && f.system === camp.system)
+    ) {
+      camp.nextSpawn = 0;
+      continue;
+    }
+    if (!camp.nextSpawn) {
+      camp.nextSpawn = s.time + BALANCE.pirates.respawn;
+      continue;
+    }
+    if (s.time >= camp.nextSpawn) {
+      const f = makeFleet(s, -1, camp.system, "Pirate raiders", [
+        ...BALANCE.pirates.fleets[camp.tier],
+      ]);
+      f.neutral = "pirates";
+      s.fleets.push(f);
+      camp.nextSpawn = 0;
+      log(
+        s,
+        "world",
+        "Pirates regrouped",
+        "Returning mining cargo is at risk near " +
+          s.systems[camp.system].name +
+          ".",
+        camp.system,
+        true,
+      );
     }
   }
   if (s.time >= s.nextChat) {

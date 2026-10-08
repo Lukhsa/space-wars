@@ -33,21 +33,16 @@ test("opening: inspect eight commanders, capture, mine, queue ships, form fleet 
   await expect(page.locator(".standings-list>button")).toHaveCount(8);
   await expect(page.getByTestId("match-timer")).toHaveText("40:00");
   await find(page, "Nexus");
-  await page.getByRole("button", { name: "Claim system", exact: true }).click();
+  await page.getByRole("button", { name: "Claim planet", exact: true }).click();
   await expect(page.locator(".route-summary")).toContainText("Nova Prime");
   await page.getByRole("button", { name: "Launch assault" }).click();
   await page.clock.runFor(7000);
   await expect(page.locator(".relation")).toHaveText("YOUR TERRITORY");
-  await page
-    .getByRole("button", { name: "Select Mining Group Alpha", exact: true })
-    .click();
+  await find(page, "Nova Prime");
   await page.locator(".asteroid-opportunity").click();
-  await page.getByRole("button", { name: "Send mining fleet" }).click();
-  await page
-    .getByRole("button", { name: "Deploy fleet", exact: false })
-    .click();
+  await page.getByRole("button", { name: "Mine once", exact: true }).click();
   await page.clock.runFor(4100);
-  await expect(page.locator(".event-items")).toContainText("Mining complete");
+  await expect(page.locator(".event-items")).toContainText("Cargo delivered");
   await page.getByRole("button", { name: "Build a ship", exact: true }).click();
   await page.getByLabel("Build quantity").selectOption("3");
   await page
@@ -62,7 +57,7 @@ test("opening: inspect eight commanders, capture, mine, queue ships, form fleet 
   await page.getByLabel("Frigate allocation").fill("3");
   await page.getByRole("button", { name: "Create fleet", exact: true }).click();
   await expect(page.getByRole("dialog").locator(".registry-row")).toHaveCount(
-    3,
+    2,
   );
   await page.getByRole("button", { name: "Close dialog" }).click();
   await page.getByRole("button", { name: "GLOBAL CHAT", exact: true }).click();
@@ -121,8 +116,10 @@ test("map battle stays playable; stances and a timed retreat preserve survivors"
   page,
 }) => {
   await start(page);
-  await find(page, "Caldera");
-  await page.getByRole("button", { name: "Claim system", exact: true }).click();
+  await find(page, "Aureole");
+  await page
+    .getByRole("button", { name: "Attack resource-lane hostiles", exact: true })
+    .click();
   const eta = (
     await page.locator(".order-stats>div").last().locator("strong").innerText()
   )
@@ -130,7 +127,7 @@ test("map battle stays playable; stances and a timed retreat preserve survivors"
     .map(Number);
   await page.getByRole("button", { name: "Launch assault" }).click();
   await page.clock.runFor((eta[0] * 60 + eta[1] + 1) * 100);
-  await expect(page.locator(".battle-tray")).toContainText("Caldera");
+  await expect(page.locator(".battle-tray")).toContainText("Aureole");
   await expect(page.locator(".fleet-card").first()).toContainText("Battle");
   await page
     .getByLabel("Fleet stance", { exact: true })

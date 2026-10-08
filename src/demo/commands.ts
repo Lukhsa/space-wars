@@ -10,6 +10,7 @@ import {
   syncPlayer,
   unitsFrom,
 } from "./model";
+import { planetPosition, planetName } from "./planets";
 import { distance, routeBetween } from "./routes";
 import type {
   DemoState,
@@ -71,9 +72,19 @@ export function fleetPosition(
   s: Pick<DemoState, "systems" | "accumulator">,
   f: Fleet,
 ): Point & { angle: number } {
-  const a = s.systems[f.system];
-  if (!moving(f)) return { ...a, angle: 0 };
-  const b = s.systems[f.route[1]],
+  const a = planetPosition(s.systems[f.system], f.planet);
+  if (!moving(f)) {
+    const angle = (f.id % 7) * 0.78 + f.owner * 0.4;
+    return {
+      x: a.x + Math.cos(angle) * 48,
+      y: a.y + Math.sin(angle) * 48,
+      angle: 0,
+    };
+  }
+  const b =
+      f.route.length === 2
+        ? planetPosition(s.systems[f.route[1]], f.targetPlanet)
+        : planetPosition(s.systems[f.route[1]], -1),
     t = Math.min(1, (f.elapsed + s.accumulator) / f.duration);
   return {
     x: a.x + (b.x - a.x) * t,
@@ -86,38 +97,37 @@ export function launchFleet(
   fleetId: number,
   target: number,
   mission: Mission,
-  repeatMining = false,
+  _repeatMining = false,
+  targetPlanet = 0,
 ): string | null {
   const f = s.fleets.find((f) => f.id === fleetId),
     system = s.systems[target];
   if (s.status !== "playing") return "This match has ended.";
-  if (!f || !system || !f.units.length)
-    return "Select an available fleet and destination.";
+  if (
+    !f ||
+    !system ||
+    !f.units.length ||
+    !Number.isInteger(targetPlanet) ||
+    targetPlanet < -1 ||
+    targetPlanet >= system.planets.length
+  )
+    return "Select an available fleet and planet.";
   if (moving(f) || f.status === "Battle" || f.retreatAt !== null)
     return "This fleet is committed. Use Retreat during battle.";
   if (system.capital && system.owner !== f.owner)
     return "Home systems are protected from foreign fleets.";
-  if (mission === "mine" && !system.asteroid)
-    return "This system has no asteroid deposits.";
-  if (mission === "mine" && system.owner !== f.owner)
-    return "Control this system before mining.";
-  if (
-    mission === "mine" &&
-    s.fleets.some(
-      (x) =>
-        x.id !== f.id &&
-        x.owner === f.owner &&
-        x.mission === "mine" &&
-        (x.route.at(-1) ?? x.system) === target,
-    )
-  )
-    return "This system already has an extraction fleet assigned.";
+  if (mission === "mine")
+    return "Use the separate civilian mining craft. Combat fleets cannot mine.";
   if (
     mission === "attack" &&
-    system.owner === f.owner &&
-    !s.fleets.some((x) => x.system === target && x.owner !== f.owner)
+    targetPlanet >= 0 &&
+    system.planets[targetPlanet].owner === f.owner &&
+    !s.fleets.some(
+      (x) =>
+        x.system === target && x.planet === targetPlanet && x.owner !== f.owner,
+    )
   )
-    return "This system is already yours. Use Defend.";
+    return "This planet is already yours. Use Defend.";
   const route = routeFor(s, f, target);
   if (!route.length) return "No permitted route.";
   const cost = fuelCost(s, f, route),
@@ -129,35 +139,69 @@ export function launchFleet(
     c.stats.orders++;
   }
   f.mission = mission;
-  f.repeatMining = mission === "mine" && repeatMining;
-  if (mission === "scout" && route.length === 1 && c) {
-    c.intel[target] = s.time + BALANCE.scoutingSeconds;
-    if (f.owner === 0) system.scouted = true;
-  }
-  f.route = route.length > 1 ? route : [];
-  f.elapsed = 0;
-  f.duration = travelTime(s, route.slice(0, 2), f);
+  f.repeatMining = false;
   f.miningElapsed = 0;
+  f.targetPlanet = targetPlanet;
+  f.route =
+    route.length > 1
+      ? route
+      : f.planet !== targetPlanet
+        ? [target, target]
+        : [];
+  f.elapsed = 0;
+  f.duration =
+    route.length === 1
+      ? BALANCE.orbitalTravel
+      : travelTime(s, route.slice(0, 2), f);
   f.lastOrder = s.time;
   f.status = moving(f)
     ? mission === "attack"
       ? "Attacking"
-      : mission === "scout"
-        ? "Scouting"
-        : "Moving"
-    : mission === "mine"
-      ? "Mining"
-      : mission === "defend"
-        ? "Defending"
-        : "Idle";
+      : "Moving"
+    : mission === "defend"
+      ? "Defending"
+      : "Idle";
+  if (mission === "scout" && c && !moving(f))
+    c.intel[target] = s.time + BALANCE.scoutingSeconds;
   log(
     s,
     "fleet",
     moving(f) ? "Fleet launched" : "Orders confirmed",
-    `${f.name} → ${system.name}.`,
+    f.name + " → " + planetName(system, targetPlanet) + ".",
     target,
     f.owner === 0,
   );
+  return null;
+}
+export function orderFleets(
+  s: DemoState,
+  owner: number,
+  ids: number[],
+  system: number,
+  planet: number,
+): string | null {
+  if (
+    !ids.length ||
+    new Set(ids).size !== ids.length ||
+    ids.some((id) => s.fleets.find((f) => f.id === id)?.owner !== owner)
+  )
+    return "Select your available combat fleets.";
+  const draft = structuredClone(s);
+  for (const id of ids) {
+    const error = launchFleet(
+      draft,
+      id,
+      system,
+      draft.systems[system]?.planets[planet]?.owner === owner
+        ? "defend"
+        : "attack",
+      false,
+      planet,
+    );
+    if (error) return error;
+  }
+  Object.assign(s, draft);
+  syncPlayer(s);
   return null;
 }
 export function buildShip(
@@ -165,6 +209,8 @@ export function buildShip(
   kind: ShipClass,
   owner = 0,
   quantity = 1,
+  system = owner,
+  planet = 0,
 ): string | null {
   const c = s.commanders[owner],
     spec = ships[kind];
@@ -177,7 +223,20 @@ export function buildShip(
     quantity > 10
   )
     return "Invalid construction order.";
-  if (c.queue.length + quantity > BALANCE.queueLimit)
+  const yard = s.systems[system]?.planets[planet];
+  if (!yard?.shipyard || yard.owner !== owner)
+    return "Select an owned shipyard planet.";
+  if (
+    s.fleets.some(
+      (f) =>
+        f.system === system &&
+        f.planet === planet &&
+        f.owner !== owner &&
+        !moving(f),
+    )
+  )
+    return "Shipyard is under attack.";
+  if (yard.queue.length + quantity > BALANCE.queueLimit)
     return "Shipyard queue is full.";
   if (
     c.resources.credits < spec.credits * quantity ||
@@ -189,13 +248,18 @@ export function buildShip(
   c.telemetry.spent.credits += spec.credits * quantity;
   c.telemetry.spent.alloy += spec.alloy * quantity;
   for (let i = 0; i < quantity; i++)
-    c.queue.push({ id: ++s.serial, kind, elapsed: 0, duration: spec.seconds });
+    yard.queue.push({
+      id: ++s.serial,
+      kind,
+      elapsed: 0,
+      duration: spec.seconds,
+    });
   log(
     s,
     "build",
     "Construction queued",
-    `${quantity} ${kind} at ${s.systems[owner].name}.`,
-    owner,
+    `${quantity} ${kind} at ${planetName(s.systems[system], planet)}.`,
+    system,
     owner === 0,
   );
   syncPlayer(s);
@@ -203,18 +267,24 @@ export function buildShip(
 }
 export function reinforceFleet(s: DemoState, fleetId: number): string | null {
   const f = s.fleets.find((f) => f.id === fleetId),
-    c = f && s.commanders[f.owner];
-  if (s.status !== "playing") return "This match has ended.";
-  if (!f || !c || moving(f) || f.system !== f.owner || f.status === "Battle")
-    return "Return to your home shipyard to reinforce.";
-  if (!c.reserve.some(Boolean)) return "No reserve ships available.";
-  let space = BALANCE.shipLimit - f.units.length;
-  if (space <= 0) return "Fleet is at its 32-ship capacity.";
+    yard = f && s.systems[f.system].planets[f.planet];
+  if (
+    s.status !== "playing" ||
+    !f ||
+    !yard?.shipyard ||
+    yard.owner !== f.owner ||
+    moving(f) ||
+    f.status === "Battle"
+  )
+    return "Reinforce at an owned shipyard planet.";
+  if (!yard.reserve.some(Boolean)) return "No reserve ships at this shipyard.";
+  let room = BALANCE.shipLimit - f.units.length;
+  if (room <= 0) return "Fleet is at its 32-ship capacity.";
   for (let i = 3; i >= 0; i--) {
-    const n = Math.min(space, c.reserve[i]);
+    const n = Math.min(room, yard.reserve[i]);
     f.units.push(...unitsFrom([0, 1, 2, 3].map((k) => (k === i ? n : 0))));
-    c.reserve[i] -= n;
-    space -= n;
+    yard.reserve[i] -= n;
+    room -= n;
   }
   refreshFleet(f);
   syncPlayer(s);
@@ -224,21 +294,43 @@ export function createFleet(
   s: DemoState,
   owner = 0,
   counts?: number[],
+  system = owner,
+  planet = 0,
 ): string | null {
-  const c = s.commanders[owner];
-  if (s.status !== "playing" || !c) return "No active commander.";
+  const c = s.commanders[owner],
+    yard = s.systems[system]?.planets[planet];
+  if (s.status !== "playing" || !c || !yard?.shipyard || yard.owner !== owner)
+    return "Select an owned shipyard planet.";
+  if (
+    s.fleets.some(
+      (f) =>
+        f.system === system &&
+        f.planet === planet &&
+        f.owner !== owner &&
+        !moving(f),
+    )
+  )
+    return "Shipyard is under attack.";
   if (s.fleets.filter((f) => f.owner === owner).length >= BALANCE.fleetLimit)
-    return "Five fleets maximum. Reinforce an existing fleet.";
-  const take = counts ?? [...c.reserve];
+    return "Five combat fleets maximum.";
+  const take = counts ?? [...yard.reserve];
   if (
     take.length !== 4 ||
-    take.some((n, i) => !Number.isInteger(n) || n < 0 || n > c.reserve[i]) ||
+    take.some((n, i) => !Number.isInteger(n) || n < 0 || n > yard.reserve[i]) ||
     take.reduce((a, b) => a + b, 0) < 1 ||
     take.reduce((a, b) => a + b, 0) > BALANCE.shipLimit
   )
     return "Choose 1–32 available reserve ships.";
-  const f = makeFleet(s, owner, owner, `Task Force ${c.stats.built + 1}`, take);
-  take.forEach((n, i) => (c.reserve[i] -= n));
+  const f = makeFleet(
+    s,
+    owner,
+    system,
+    "Task Force " + (c.stats.built + 1),
+    take,
+  );
+  f.planet = planet;
+  f.targetPlanet = planet;
+  take.forEach((n, i) => (yard.reserve[i] -= n));
   s.fleets.push(f);
   syncPlayer(s);
   return null;
@@ -269,6 +361,7 @@ export function retreatFleet(s: DemoState, id: number): string | null {
   f.repeatMining = false;
   f.miningElapsed = 0;
   f.retreatFuel = cost;
+  f.targetPlanet = 0;
   f.retreatAt = s.time + BALANCE.retreatSeconds;
   f.status = "Retreating";
   log(

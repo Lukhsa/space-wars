@@ -1,3 +1,6 @@
+import { MiningPanel } from "./components/MiningPanel";
+import { ownedYards, planetName } from "./demo/planets";
+import { orderFleets } from "./demo/commands";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
@@ -224,6 +227,13 @@ export default function App({
   const [state, setState] = useState(
     () => initialState ?? generateGalaxy("ORION-7742"),
   );
+  const [selectedPlanet, setSelectedPlanet] = useState(0),
+    [selectedDeposit, setSelectedDeposit] = useState<number | null>(null),
+    [selectedFleetIds, setSelectedFleetIds] = useState<number[]>([]),
+    [yardKey, setYardKey] = useState("0:0");
+  const yards = ownedYards(state, 0);
+  const yard =
+    yards.find((y) => y.system.id + ":" + y.planet.id === yardKey) ?? yards[0];
   const [repeatMining, setRepeatMining] = useState(false);
   const [selected, setSelected] = useState(0),
     [asteroid, setAsteroid] = useState(false),
@@ -247,6 +257,7 @@ export default function App({
   const [order, setOrder] = useState<{
       target: number;
       mission: Mission;
+      planet: number;
       fleet: number;
     } | null>(null),
     [overlay, setOverlay] = useState<
@@ -291,10 +302,11 @@ export default function App({
     if (latestAlert) setToast(latestAlert.title + " — " + latestAlert.detail);
   }, [latestAlert?.id]);
   const s = state.systems[selected],
-    owner = s.owner === null ? null : state.commanders[s.owner],
+    world = s.planets[selectedPlanet] ?? s.planets[0],
+    owner = world.owner === null ? null : state.commanders[world.owner],
     civ = owner ? civilizations[owner.civilization] : null;
-  const own = s.owner === 0,
-    neutral = s.owner === null,
+  const own = world.owner === 0,
+    neutral = world.owner === null,
     relation = own
       ? "YOUR TERRITORY"
       : neutral
@@ -315,6 +327,8 @@ export default function App({
   const ownedCount = state.systems.filter((s) => s.owner === 0).length;
   const inspect = useCallback((id: number, belt = false) => {
     setSelected(id);
+    setSelectedPlanet(0);
+    setSelectedDeposit(null);
     setAsteroid(belt);
     setInspectorOpen(true);
   }, []);
@@ -322,9 +336,18 @@ export default function App({
     inspect(id, belt);
     setFocus((f) => ({ id, nonce: f.nonce + 1, asteroid: belt }));
   };
-  const selectFleet = (id: number) => {
+  const selectFleet = (id: number, additive = false) => {
     const fleet = state.fleets.find((f) => f.id === id)!;
     setSelectedFleet(id);
+    if (fleet.owner === 0)
+      setSelectedFleetIds((ids) =>
+        additive
+          ? ids.includes(id)
+            ? ids.filter((x) => x !== id)
+            : [...ids, id]
+          : [id],
+      );
+    else setSelectedFleetIds([]);
     inspect(moving(fleet) ? fleet.route.at(-1)! : fleet.system);
     setFocus((f) => ({
       id: fleet.system,
@@ -342,7 +365,12 @@ export default function App({
       );
       return;
     }
-    setOrder({ target: selected, mission, fleet: preferred.id });
+    setOrder({
+      target: selected,
+      planet: selectedPlanet,
+      mission,
+      fleet: preferred.id,
+    });
   };
   const mutate = (
     fn: (draft: DemoState) => string | null,
@@ -360,7 +388,30 @@ export default function App({
     if (success) setToast(success);
     return true;
   };
+  const selectPlanet = (system: number, planet: number) => {
+    if (
+      selectedFleetIds.length &&
+      mutate(
+        (d) => orderFleets(d, 0, selectedFleetIds, system, planet),
+        "Fleet orders confirmed.",
+      )
+    )
+      setSelectedFleetIds([]);
+    inspect(system);
+    setSelectedPlanet(planet);
+  };
+  useEffect(() => {
+    const clear = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedFleetIds([]);
+    };
+    window.addEventListener("keydown", clear);
+    return () => window.removeEventListener("keydown", clear);
+  }, []);
   const reset = (seed: string) => {
+    setSelectedPlanet(0);
+    setSelectedFleetIds([]);
+    setSelectedDeposit(null);
+    setYardKey("0:0");
     const next = generateGalaxy(
       seed.trim() || "ORION-7742",
       matchDuration,
@@ -382,7 +433,7 @@ export default function App({
   };
   const commission = (kind: ShipClass) =>
     mutate(
-      (d) => buildShip(d, kind, 0, quantity),
+      (d) => buildShip(d, kind, 0, quantity, yard.system.id, yard.planet.id),
       `${kind} added to the shipyard.`,
     );
   const results = search.trim()
@@ -563,7 +614,9 @@ export default function App({
               {relation}
             </div>
             <h1>
-              {asteroid ? asteroidSiteName(state.seed, s.id, s.name) : s.name}
+              {asteroid
+                ? asteroidSiteName(state.seed, s.id, s.name)
+                : planetName(s, selectedPlanet)}
             </h1>
             <p>
               {asteroid
@@ -580,11 +633,13 @@ export default function App({
               src={asset(
                 asteroid
                   ? asteroidAppearance(state.seed, s.id).art
-                  : `original/sun-type-${s.star}.webp`,
+                  : planets[world.art],
               )}
-              className={asteroid ? "" : `star-art star-type-${s.star}`}
+              className={asteroid ? "" : "planet-texture"}
               alt={
-                asteroid ? `${s.name} asteroid field` : `${s.name} star system`
+                asteroid
+                  ? `${s.name} asteroid field`
+                  : planetName(s, selectedPlanet)
               }
             />
             <span className="hero-coordinate">
@@ -610,7 +665,7 @@ export default function App({
                 <span className="eyebrow">
                   {owner ? "CONTROLLED BY" : "SOVEREIGNTY"}
                 </span>
-                <strong>{owner?.name ?? "Unclaimed system"}</strong>
+                <strong>{owner?.name ?? "Unclaimed planet"}</strong>
                 <small style={{ color: civ?.color }}>
                   {civ?.name ?? "Beyond established borders"}
                 </small>
@@ -670,8 +725,8 @@ export default function App({
                     <strong>
                       {s.capital
                         ? "Protected"
-                        : strengthEstimate(state, 0, selected)
-                          ? `≈ ${format(strengthEstimate(state, 0, selected)![1])}`
+                        : strengthEstimate(state, 0, selected, selectedPlanet)
+                          ? `≈ ${format(strengthEstimate(state, 0, selected, selectedPlanet)![1])}`
                           : "Unknown"}
                     </strong>
                   </div>
@@ -681,10 +736,16 @@ export default function App({
                   <span>Fleet presence</span>
                   <strong>
                     {state.fleets.filter(
-                      (f) => f.system === selected && !moving(f),
+                      (f) =>
+                        f.system === selected &&
+                        f.planet === selectedPlanet &&
+                        !moving(f),
                     ).length || "No"}{" "}
                     {state.fleets.filter(
-                      (f) => f.system === selected && !moving(f),
+                      (f) =>
+                        f.system === selected &&
+                        f.planet === selectedPlanet &&
+                        !moving(f),
                     ).length === 1
                       ? "fleet"
                       : "fleets"}
@@ -692,17 +753,20 @@ export default function App({
                 </div>
                 <div className="resource-output">
                   <span className="eyebrow">
-                    SYSTEM OUTPUT <small>/ MIN</small>
+                    PLANET OUTPUT <small>/ MIN</small>
                   </span>
                   <div>
                     <span>
-                      <Coins size={13} />+{s.output[0]}
+                      <Coins size={13} />+
+                      {format(s.output[0] / s.planets.length)}
                     </span>
                     <span>
-                      <Boxes size={13} />+{s.output[1]}
+                      <Boxes size={13} />+
+                      {format(s.output[1] / s.planets.length)}
                     </span>
                     <span>
-                      <Fuel size={13} />+{s.output[2]}
+                      <Fuel size={13} />+
+                      {format(s.output[2] / s.planets.length)}
                     </span>
                   </div>
                 </div>
@@ -726,14 +790,12 @@ export default function App({
             )}
             <div className="context-actions">
               {asteroid ? (
-                <button
-                  className="primary-button"
-                  onClick={() => openOrder("mine")}
-                >
-                  <Boxes size={15} />
-                  Send mining fleet
-                  <ArrowRight size={14} />
-                </button>
+                <MiningPanel
+                  state={state}
+                  system={selected}
+                  deposit={selectedDeposit}
+                  mutate={mutate}
+                />
               ) : own ? (
                 <button
                   className="primary-button"
@@ -752,9 +814,11 @@ export default function App({
                   <Flag size={15} />
                   {s.capital
                     ? "Protected home"
-                    : neutral
-                      ? "Claim system"
-                      : "Attack system"}
+                    : selectedPlanet < 0
+                      ? "Clear resource lanes"
+                      : neutral
+                        ? "Claim planet"
+                        : "Attack planet"}
                   <ArrowRight size={14} />
                 </button>
               )}
@@ -791,10 +855,32 @@ export default function App({
                 )}
               </div>
             </div>
-            <SystemDetails state={state} selected={selected} />
+            <SystemDetails
+              state={state}
+              selected={selected}
+              planet={selectedPlanet}
+              onPlanet={(p) => {
+                setSelectedPlanet(p);
+                setAsteroid(false);
+              }}
+              onClearPirates={() => {
+                setSelectedPlanet(-1);
+                const f =
+                  available.find((f) => f.id === selectedFleet) ?? available[0];
+                if (f)
+                  setOrder({
+                    target: selected,
+                    planet: -1,
+                    mission: "attack",
+                    fleet: f.id,
+                  });
+              }}
+            />
             {!asteroid && (
               <PlanetaryDefenses
-                key={selected}
+                key={selected + ":" + selectedPlanet}
+                planet={selectedPlanet}
+                onPlanet={setSelectedPlanet}
                 state={state}
                 selected={selected}
                 mutate={mutate}
@@ -913,6 +999,13 @@ export default function App({
             selected={selected}
             selectedAsteroid={asteroid}
             selectedFleet={selectedFleet}
+            selectedPlanet={selectedPlanet}
+            selectedFleetIds={selectedFleetIds}
+            onPlanet={selectPlanet}
+            onDeposit={(system, id) => {
+              inspect(system, true);
+              setSelectedDeposit(id);
+            }}
             filter={filter}
             onSelect={inspect}
             onFleet={selectFleet}
@@ -921,6 +1014,15 @@ export default function App({
             paused={paused}
           />
           <div className="fleet-dock">
+            {selectedFleetIds.length > 0 && (
+              <button
+                className="selection-hint"
+                onClick={() => setSelectedFleetIds([])}
+              >
+                {selectedFleetIds.length} fleet(s) selected · Shift-click to add
+                · click a planet to order · Escape to clear
+              </button>
+            )}
             <BattleTray state={state} onFocus={focusOn} />
             {currentFleet?.owner === 0 && (
               <FleetOrders state={state} fleet={currentFleet} mutate={mutate} />
@@ -948,9 +1050,7 @@ export default function App({
                     currentFleet.retreatAt !== null
                   }
                   onClick={() =>
-                    openOrder(
-                      asteroid ? "mine" : s.owner !== 0 ? "attack" : "move",
-                    )
+                    openOrder(world.owner !== 0 ? "attack" : "move")
                   }
                 >
                   {moving(currentFleet)
@@ -986,7 +1086,7 @@ export default function App({
                 <button
                   key={f.id}
                   className={`fleet-card ${selectedFleet === f.id ? "selected" : ""}`}
-                  onClick={() => selectFleet(f.id)}
+                  onClick={(e) => selectFleet(f.id, e.shiftKey)}
                   aria-label={`Select ${f.name}`}
                 >
                   <div className="fleet-card-top">
@@ -1196,7 +1296,7 @@ export default function App({
         <span>
           ORION-{state.seed.replace("ORION-", "")}
           <i />
-          28 STAR SYSTEMS
+          56 STAR SYSTEMS
           <span className="footer-version">SPACE WARS / 0.2</span>
         </span>
       </footer>
@@ -1292,22 +1392,31 @@ export default function App({
               src={asset(
                 order.mission === "mine"
                   ? asteroidAppearance(state.seed, order.target).art
-                  : planets[state.systems[order.target].planet],
+                  : planets[
+                      state.systems[order.target].planets[
+                        Math.max(0, order.planet)
+                      ].art
+                    ],
               )}
               alt=""
             />
             <div>
               <span className="eyebrow">DESTINATION</span>
               <h3>
-                {state.systems[order.target].name}
+                {planetName(state.systems[order.target], order.planet)}
                 {order.mission === "mine"
                   ? ` ${asteroidAppearance(state.seed, order.target).suffix}`
                   : ""}
               </h3>
               <p>
-                {state.systems[order.target].owner === null
-                  ? "Neutral frontier"
-                  : state.commanders[state.systems[order.target].owner!].name}
+                {order.planet < 0
+                  ? "Resource-lane hostiles"
+                  : state.systems[order.target].planets[order.planet].owner ===
+                      null
+                    ? "Unclaimed planet"
+                    : state.commanders[
+                        state.systems[order.target].planets[order.planet].owner!
+                      ].name}
               </p>
             </div>
             <Flag size={22} />
@@ -1342,7 +1451,7 @@ export default function App({
               </small>
               <strong>
                 {order.mission === "attack"
-                  ? (strengthEstimate(state, 0, order.target)
+                  ? (strengthEstimate(state, 0, order.target, order.planet)
                       ?.map(format)
                       .join("–") ?? "Unknown")
                   : order.mission === "mine"
@@ -1354,7 +1463,11 @@ export default function App({
               <small>TRAVEL TIME</small>
               <strong>
                 {preview.length === 1
-                  ? "00:00"
+                  ? time(
+                      selectedOrderFleet.planet === order.planet
+                        ? 0
+                        : BALANCE.orbitalTravel,
+                    )
                   : time(travelTime(state, preview, selectedOrderFleet))}
               </strong>
             </div>
@@ -1369,7 +1482,7 @@ export default function App({
             <CircleHelp size={14} />
             <span>
               {order.mission === "attack"
-                ? "Combat resolves on the map. Clear hostile fleets, then hold for 20 seconds to capture. Intermediate hostiles intercept your route."
+                ? "Combat starts with a 6-second approach. Clear this planet’s fleet and defenses, then hold for 20 seconds. Other planets remain independent."
                 : order.mission === "mine"
                   ? `Extract Alloy every ${BALANCE.miningSeconds}s. One extraction fleet per system. Combat cancels mining; new orders cancel the current cycle.`
                   : "Your fleet follows the connected travel lanes. Orders cannot change while underway."}
@@ -1404,6 +1517,7 @@ export default function App({
                         order.target,
                         order.mission,
                         repeatMining,
+                        order.planet,
                       ),
                     "Orders confirmed. Fleet underway.",
                   )
@@ -1429,20 +1543,37 @@ export default function App({
       )}
       {overlay === "build" && (
         <Modal
-          eyebrow="NOVA PRIME SHIPYARD"
+          eyebrow="PLANETARY SHIPYARDS"
           title="Commission a warship"
           onClose={() => setOverlay(null)}
         >
           <p className="modal-intro">
-            Build your presence on the frontier. Completed ships enter your
-            homeworld reserve.
+            Completed ships enter the reserve at the selected shipyard planet.
+            Capture a yard to build closer to the front.
           </p>
+          <label className="quantity-field">
+            SHIPYARD
+            <select
+              aria-label="Production shipyard"
+              value={yard.system.id + ":" + yard.planet.id}
+              onChange={(e) => setYardKey(e.target.value)}
+            >
+              {yards.map((y) => (
+                <option
+                  key={y.system.id + ":" + y.planet.id}
+                  value={y.system.id + ":" + y.planet.id}
+                >
+                  {planetName(y.system, y.planet.id)}
+                </option>
+              ))}
+            </select>
+          </label>
           <ShipQuantity quantity={quantity} setQuantity={setQuantity} />
           <div className="ship-catalog">
             {shipClasses.map((kind) => {
               const spec = ships[kind],
                 disabled =
-                  state.queue.length + quantity > BALANCE.queueLimit ||
+                  yard.planet.queue.length + quantity > BALANCE.queueLimit ||
                   state.resources.credits < spec.credits * quantity ||
                   state.resources.alloy < spec.alloy * quantity;
               return (
@@ -1464,7 +1595,7 @@ export default function App({
                     </p>
                   </div>
                   <button disabled={disabled} onClick={() => commission(kind)}>
-                    {state.queue.length + quantity > BALANCE.queueLimit
+                    {yard.planet.queue.length + quantity > BALANCE.queueLimit
                       ? "Full"
                       : "Build"}
                     <Hammer size={12} />
@@ -1475,9 +1606,14 @@ export default function App({
           </div>
           <div className="modal-bottom-note">
             <Hammer size={13} />
-            {state.queue.length} / 10 queue slots used · 2 active berths{" "}
+            {yard.planet.queue.map((job) => (
+              <span key={job.id}>
+                {job.kind} · {Math.ceil(job.duration - job.elapsed)}s{" "}
+              </span>
+            ))}
+            {yard.planet.queue.length} / 10 queue slots used · 2 active berths{" "}
             <span>
-              {state.reserve.reduce((a, b) => a + b, 0)} ships in reserve
+              {yard.planet.reserve.reduce((a, b) => a + b, 0)} ships in reserve
             </span>
           </div>
         </Modal>
@@ -1490,7 +1626,7 @@ export default function App({
         >
           <p className="modal-intro">
             Select a fleet to plot its next mission. Reserve ships can join a
-            fleet stationed at Nova Prime.
+            fleet stationed at any owned shipyard planet.
           </p>
           <FleetFormation state={state} mutate={mutate} />
           {playerFleets.map((f) => (
@@ -1518,20 +1654,26 @@ export default function App({
                 Focus
                 <Crosshair size={13} />
               </button>
-              {f.system === 0 && !moving(f) && (
-                <button
-                  disabled={!state.reserve.some(Boolean)}
-                  onClick={() =>
-                    mutate(
-                      (d) => reinforceFleet(d, f.id),
-                      "Reserve ships assigned to fleet.",
-                    )
-                  }
-                >
-                  <Rocket size={13} />
-                  Reinforce
-                </button>
-              )}
+              {state.systems[f.system].planets[f.planet]?.shipyard &&
+                state.systems[f.system].planets[f.planet]?.owner === 0 &&
+                !moving(f) && (
+                  <button
+                    disabled={
+                      !state.systems[f.system].planets[f.planet].reserve.some(
+                        Boolean,
+                      )
+                    }
+                    onClick={() =>
+                      mutate(
+                        (d) => reinforceFleet(d, f.id),
+                        "Reserve ships assigned to fleet.",
+                      )
+                    }
+                  >
+                    <Rocket size={13} />
+                    Reinforce
+                  </button>
+                )}
             </div>
           ))}
           <div className="modal-bottom-note">
@@ -1630,18 +1772,20 @@ export default function App({
             <p>
               <Navigation />
               <span>
-                <strong>Give your fleet a destination</strong>Select a fleet,
-                then a system. Set course, review the route and confirm. Travel
-                takes 20–50 seconds per nearby hop.
+                <strong>Give your fleet a destination</strong>Click a fleet,
+                Shift-click to add more, then click a planet to send them.
+                Escape clears the selection. Planet panels also offer explicit
+                orders.
               </span>
             </p>
             <p>
               <Flag />
               <span>
-                <strong>Leave your mark</strong>Claim Nexus or Aegis, mine your
-                home belt, then contest strategic systems. Territory earns
-                Dominion. Highest score at 40 minutes wins; hold 12 of 20
-                external systems for 75 seconds to win early.
+                <strong>Leave your mark</strong>Conquer planets and hold a
+                strict majority to control each system. Use civilian miners for
+                Alloy and capture shipyard planets for forward production.
+                Highest score at 40 minutes wins; hold 29 of 48 external systems
+                for 75 seconds to win early.
               </span>
             </p>
             <p>

@@ -5,6 +5,11 @@ test("bots visibly construct defenses through the shared rules", async ({
   await start(page, "bots");
   const name = await page.locator("html").getAttribute("data-bot-system");
   await find(page, name!);
+  await page
+    .getByLabel("Defense planet")
+    .selectOption(
+      (await page.locator("html").getAttribute("data-bot-planet"))!,
+    );
   await expect(page.locator(".planetary-defenses")).toContainText(
     "Constructing",
   );
@@ -119,7 +124,7 @@ test("siege destroys defenses, blocks early capture and clears hostile ruins", a
   await page.screenshot({
     path: "docs/screenshots/planetary-defense-battle.png",
   });
-  await page.clock.runFor(1500);
+  await page.clock.runFor(2000);
   await expect(page.locator(".planetary-defenses")).toContainText("Destroyed");
   await page.clock.runFor(5000);
   await expect(page.locator(".relation")).toHaveText("YOUR TERRITORY");
@@ -130,24 +135,19 @@ test("repeat mining pays multiple cycles, supplies construction and can be cance
   page,
 }) => {
   await start(page, "mine");
-  await page
-    .getByRole("button", { name: "Select Mining Group Alpha", exact: true })
-    .click();
   await page.locator(".asteroid-opportunity").click();
-  await page.getByRole("button", { name: "Send mining fleet" }).click();
-  await page.getByLabel("Mining mode").selectOption("repeat");
   await page
-    .getByRole("button", { name: "Deploy fleet", exact: false })
+    .getByRole("button", { name: "Continue mining", exact: true })
     .click();
   await page.clock.runFor(8100);
-  await expect(page.locator(".event-items")).toContainText("Mining complete");
-  await expect(page.locator(".mining-order-status")).toContainText(
-    "Continue mining",
-  );
-  await page
-    .getByRole("button", { name: "Cancel mining", exact: true })
-    .click();
-  await expect(page.locator(".mining-order-status")).toHaveCount(0);
+  await expect(page.locator(".event-items")).toContainText("Cargo delivered");
+  await expect(
+    page.getByRole("region", { name: "Civilian mining" }),
+  ).toContainText("Outbound");
+  await page.getByRole("button", { name: "Recall miner", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Civilian mining" }),
+  ).toContainText("Idle");
   await page.getByRole("button", { name: "Build a ship", exact: true }).click();
   await page.getByLabel("Build quantity").selectOption("2");
   await page

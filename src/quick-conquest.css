@@ -660,3 +660,68 @@
 .mining-order-status {
   width: 100%;
 }
+
+/* Planet selection, civilian craft and short weapon volleys. */
+.planet-roster {
+  flex-wrap: wrap;
+}
+.planet-roster button {
+  padding: 3px;
+  background: #101d27;
+  border: 1px solid #31434f;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.planet-roster button.active {
+  border-color: #b8dce2;
+}
+.planet-roster button small {
+  display: block;
+  font-size: 8px;
+}
+.planet-roster button img {
+  width: 32px;
+  height: 32px;
+}
+.selection-hint {
+  pointer-events: auto;
+  background: #132a35;
+  color: #c6e4e7;
+  border: 1px solid #53818c;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 11px;
+  max-width: 100%;
+}
+.orbital-planet {
+  cursor: pointer;
+}
+.combat-volley {
+  animation: weapon-volley 0.85s ease-out both;
+  stroke-dasharray: 8 5;
+}
+@keyframes weapon-volley {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 35;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+}
+.planetary-defenses progress {
+  width: 100%;
+}
+.planetary-defenses > p {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.planetary-defenses > small {
+  display: block;
+  line-height: 1.6;
+  margin-top: 8px;
+}

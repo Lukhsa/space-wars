@@ -1,5 +1,6 @@
 import { BALANCE, PHASES } from "./balance";
 import { defensePower } from "./defenses";
+import { ownedPlanets } from "./planets";
 import type { Strategic } from "./balance";
 import type {
   DemoState,
@@ -46,6 +47,8 @@ export function makeFleet(
     id: ++s.serial,
     owner,
     system,
+    planet: owner < 0 ? -1 : 0,
+    targetPlanet: owner < 0 ? -1 : 0,
     name,
     power: 0,
     ships: counts,
@@ -129,7 +132,9 @@ export const ownerName = (s: DemoState, owner: number) =>
         : "Void Leviathan";
 export function visibleSystems(s: DemoState, owner: number) {
   const seen = new Set(
-    s.systems.filter((x) => x.owner === owner).map((x) => x.id),
+    s.systems
+      .filter((x) => x.planets.some((p) => p.owner === owner))
+      .map((x) => x.id),
   );
   for (const f of s.fleets) if (f.owner === owner) seen.add(f.system);
   const hops = hasBonus(s, owner, "sensors") ? 2 : 1;
@@ -147,6 +152,7 @@ export function strengthEstimate(
   s: DemoState,
   owner: number,
   system: number,
+  planet?: number,
 ): [number, number] | null {
   if (
     !visibleSystems(s, owner).has(system) &&
@@ -154,10 +160,20 @@ export function strengthEstimate(
   )
     return null;
   const p = s.fleets
-    .filter((f) => f.owner !== owner && f.system === system && !moving(f))
+    .filter(
+      (f) =>
+        f.owner !== owner &&
+        f.system === system &&
+        (planet === undefined || f.planet === planet) &&
+        !moving(f),
+    )
     .reduce(
       (n, f) => n + f.power,
-      s.systems[system].owner !== owner ? defensePower(s.systems[system]) : 0,
+      s.systems[system].planets
+        .filter(
+          (p) => p.owner !== owner && (planet === undefined || p.id === planet),
+        )
+        .reduce((n, p) => n + defensePower(s.systems[system], p.id), 0),
     );
   const scout = (s.commanders[owner].intel[system] ?? 0) > s.time;
   return [
@@ -166,6 +182,10 @@ export function strengthEstimate(
   ];
 }
 export function syncPlayer(s: DemoState) {
+  for (const c of s.commanders) {
+    c.reserve = s.systems[c.id].planets[0].reserve;
+    c.queue = s.systems[c.id].planets[0].queue;
+  }
   s.resources = s.commanders[0].resources;
   s.reserve = s.commanders[0].reserve;
   s.queue = s.commanders[0].queue;
@@ -173,11 +193,11 @@ export function syncPlayer(s: DemoState) {
 export function incomePerMinute(s: DemoState, owner: number): Resources {
   const income = { credits: 0, alloy: 0, fuel: 0 };
   const recovery = s.commanders[owner].recoveryUntil > s.time;
-  for (const x of s.systems.filter((x) => x.owner === owner)) {
+  for (const { system: x } of ownedPlanets(s, owner)) {
     const boost = x.capital && recovery ? 1 + BALANCE.recovery.income : 1;
-    income.credits += x.output[0] * boost;
-    income.alloy += x.output[1] * boost;
-    income.fuel += x.output[2] * boost;
+    income.credits += (x.output[0] * boost) / x.planets.length;
+    income.alloy += (x.output[1] * boost) / x.planets.length;
+    income.fuel += (x.output[2] * boost) / x.planets.length;
   }
   if (hasBonus(s, owner, "trade")) income.credits *= 1 + BALANCE.buffs.trade;
   if (hasBonus(s, owner, "titanium"))

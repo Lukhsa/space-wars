@@ -1,6 +1,7 @@
 import { BALANCE } from "./balance";
 import { activeBuff, log, moving, ownerName, refreshFleet } from "./model";
 import { activeDefenses, defenseSpec } from "./defenses";
+import { planetName } from "./planets";
 import { randomFrom } from "./random";
 import type {
   Battle,
@@ -78,10 +79,10 @@ type Combatant = {
   fleet?: Fleet;
   installation?: Installation;
 };
-function present(s: DemoState, system: number): Combatant[] {
+function present(s: DemoState, system: number, planet: number): Combatant[] {
   const x = s.systems[system];
   const units: Combatant[] = s.fleets
-    .filter((f) => f.system === system && !moving(f))
+    .filter((f) => f.system === system && f.planet === planet && !moving(f))
     .flatMap((f) =>
       f.units.map((unit) => ({
         owner: f.owner,
@@ -91,10 +92,11 @@ function present(s: DemoState, system: number): Combatant[] {
         fleet: f,
       })),
     );
-  if (x.owner !== null)
-    for (const d of activeDefenses(x))
+  const owner = x.planets[planet]?.owner;
+  if (owner !== null && owner !== undefined)
+    for (const d of activeDefenses(x, planet))
       units.push({
-        owner: x.owner,
+        owner,
         unit: d,
         kind: 2,
         stance: "Balanced",
@@ -113,7 +115,7 @@ const power = (cs: Combatant[]) =>
     0,
   );
 function finish(s: DemoState, b: Battle) {
-  const alive = present(s, b.system).filter(
+  const alive = present(s, b.system, b.planet).filter(
     (c) => c.unit.hp > 0 && b.owners.includes(c.owner),
   );
   const owners = [...new Set(alive.map((c) => c.owner))];
@@ -134,7 +136,7 @@ function finish(s: DemoState, b: Battle) {
       ? "No forces survived"
       : ownerName(s, winner) + " holds the field") +
       " at " +
-      s.systems[b.system].name +
+      planetName(s.systems[b.system], b.planet) +
       ".",
     b.system,
     b.owners.includes(0),
@@ -155,51 +157,60 @@ function finish(s: DemoState, b: Battle) {
 }
 export function combatTick(s: DemoState) {
   s.battles = s.battles.filter((b) => !finish(s, b));
-  for (const x of s.systems) {
-    if (x.capital || s.battles.some((b) => b.system === x.id)) continue;
-    const cs = present(s, x.id),
-      owners = [...new Set(cs.map((c) => c.owner))].sort((a, b) => a - b);
-    if (owners.length < 2) continue;
-    const chosen = owners.slice(0, 2),
-      initial = chosen.map((o) => power(cs.filter((c) => c.owner === o)));
-    const b: Battle = {
-      id: ++s.serial,
-      system: x.id,
-      owners: chosen,
-      start: s.time,
-      initial,
-      power: [...initial],
-      casualties: [0, 0],
-      participants: [],
-    };
-    s.battles.push(b);
-    x.capture = null;
-    for (const o of chosen)
-      if (o >= 0) {
-        s.commanders[o].stats.battles++;
-        if (chosen.includes(-2)) s.commanders[o].stats.guardian++;
-        if (cs.some((c) => c.installation && chosen.includes(c.owner)))
-          s.commanders[o].telemetry.defenseBattles++;
-      }
-    log(
-      s,
-      "battle",
-      "Battle of " + x.name,
-      ownerName(s, chosen[0]) +
-        " vs " +
-        ownerName(s, chosen[1]) +
-        (activeDefenses(x).length ? " · planetary defenses engaged" : ""),
-      x.id,
-      chosen.includes(0),
-      chosen.includes(0),
-    );
-  }
+  for (const x of s.systems)
+    for (const planet of [-1, ...x.planets.map((p) => p.id)]) {
+      if (
+        x.capital ||
+        s.battles.some((b) => b.system === x.id && b.planet === planet)
+      )
+        continue;
+      const cs = present(s, x.id, planet),
+        owners = [...new Set(cs.map((c) => c.owner))].sort((a, b) => a - b);
+      if (owners.length < 2) continue;
+      const chosen = owners.slice(0, 2),
+        initial = chosen.map((o) => power(cs.filter((c) => c.owner === o)));
+      const b: Battle = {
+        id: ++s.serial,
+        system: x.id,
+        planet,
+        shots: [],
+        owners: chosen,
+        start: s.time,
+        initial,
+        power: [...initial],
+        casualties: [0, 0],
+        participants: [],
+      };
+      s.battles.push(b);
+      if (x.planets[planet]) x.planets[planet].capture = null;
+      for (const o of chosen)
+        if (o >= 0) {
+          s.commanders[o].stats.battles++;
+          if (chosen.includes(-2)) s.commanders[o].stats.guardian++;
+          if (cs.some((c) => c.installation && chosen.includes(c.owner)))
+            s.commanders[o].telemetry.defenseBattles++;
+        }
+      log(
+        s,
+        "battle",
+        "Battle of " + planetName(x, planet),
+        ownerName(s, chosen[0]) +
+          " vs " +
+          ownerName(s, chosen[1]) +
+          (activeDefenses(x, planet).length
+            ? " · planetary defenses engaged"
+            : ""),
+        x.id,
+        chosen.includes(0),
+        chosen.includes(0),
+      );
+    }
   for (const b of s.battles) {
-    const cs = present(s, b.system),
+    const cs = present(s, b.system, b.planet),
       forces = b.owners.map((o) => cs.filter((c) => c.owner === o));
     // Any hostile arrival cancels extraction, including owners awaiting a two-side engagement.
     for (const f of s.fleets.filter(
-      (f) => f.system === b.system && !moving(f),
+      (f) => f.system === b.system && f.planet === b.planet && !moving(f),
     )) {
       if (f.mission === "mine") {
         f.repeatMining = false;
@@ -211,6 +222,8 @@ export function combatTick(s: DemoState) {
         if (f.retreatAt === null) f.status = "Battle";
       } else if (f.status === "Mining") f.status = "Idle";
     }
+    b.shots = [];
+    if (s.time - b.start < BALANCE.combat.approach) continue;
     const random = randomFrom(s.seed + ":combat:" + b.id + ":" + s.time);
     const hits: { target: Combatant; damage: number; source: number }[] = [];
     const escalation =
@@ -227,7 +240,15 @@ export function combatTick(s: DemoState) {
           continue;
         let targets = [...forces[1 - side]];
         if (!targets.length) continue;
-        if (railgun || c.stance.startsWith("Focus")) {
+        if (
+          c.stance === "Focus defenses" &&
+          targets.some((t) => t.installation)
+        )
+          targets = targets.filter((t) => t.installation);
+        if (
+          railgun ||
+          (c.stance.startsWith("Focus") && c.stance !== "Focus defenses")
+        ) {
           targets.sort((a, b) =>
             c.stance === "Focus escorts" ? a.kind - b.kind : b.kind - a.kind,
           );
@@ -263,6 +284,22 @@ export function combatTick(s: DemoState) {
             (activeBuff(s, c.owner, "leviathan")
               ? BALANCE.leviathan.damage
               : 0);
+        b.shots.push({
+          from:
+            c.fleet?.id ??
+            -(
+              c.installation!.planet * 2 +
+              (c.installation!.kind === "railgun" ? 2 : 1)
+            ),
+          to:
+            t.fleet?.id ??
+            -(
+              t.installation!.planet * 2 +
+              (t.installation!.kind === "railgun" ? 2 : 1)
+            ),
+          damage: spec(c).attack,
+          railgun: !!railgun,
+        });
         hits.push({
           target: t,
           source: c.owner,
@@ -275,7 +312,8 @@ export function combatTick(s: DemoState) {
             (1 -
               BALANCE.combat.variation / 2 +
               random() * BALANCE.combat.variation) *
-            escalation,
+            escalation *
+            BALANCE.combat.damageScale,
         });
       }
     });
@@ -300,7 +338,11 @@ export function combatTick(s: DemoState) {
       }
     }
     for (const f of s.fleets.filter(
-      (f) => f.system === b.system && b.owners.includes(f.owner) && !moving(f),
+      (f) =>
+        f.system === b.system &&
+        f.planet === b.planet &&
+        b.owners.includes(f.owner) &&
+        !moving(f),
     )) {
       refreshFleet(f);
       if (!f.units.length) rewardNeutral(s, f, killers.get(f.id) ?? -1);

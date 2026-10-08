@@ -1,3 +1,5 @@
+> Historical rules/report. The current playtest uses [planet conquest, civilian mining and forward shipyards](PLANET_PLAYTEST_REPORT.md). Values and measurements below describe the earlier implementation.
+
 # Economy and planetary defense balance pass
 
 Implemented 8 October 2026 for the local eight-player Quick Conquest prototype. Branch: `feature/economy-planetary-defenses`. Baseline: `a31e203`. No backend, Supabase, authentication, multiplayer or deployment work is included.

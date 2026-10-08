@@ -1,3 +1,4 @@
+import { planetPosition, planetName } from "../demo/planets";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Crosshair,
@@ -30,9 +31,13 @@ interface Props {
   selected: number;
   selectedAsteroid: boolean;
   selectedFleet: number | null;
+  selectedPlanet: number;
+  selectedFleetIds: number[];
+  onPlanet: (system: number, planet: number) => void;
+  onDeposit: (system: number, deposit: number) => void;
   filter: Filter;
   onSelect: (id: number, asteroid?: boolean) => void;
-  onFleet: (id: number) => void;
+  onFleet: (id: number, additive?: boolean) => void;
   focus: { id: number; nonce: number; point?: Point; asteroid?: boolean };
   preview: number[];
   paused: boolean;
@@ -43,6 +48,10 @@ export default function GalaxyMap({
   selected,
   selectedAsteroid,
   selectedFleet,
+  selectedPlanet,
+  selectedFleetIds,
+  onPlanet,
+  onDeposit,
   filter,
   onSelect,
   onFleet,
@@ -69,9 +78,15 @@ export default function GalaxyMap({
   const [hover, setHover] = useState<number | null>(null),
     [mouse, setMouse] = useState({ x: 0, y: 0 });
   const [hoverAsteroid, setHoverAsteroid] = useState(false);
+  const depositKey = state.systems
+    .map((x) => x.deposits.map((d) => d.id).join(","))
+    .join(";");
+  const planetKey = state.systems
+    .map((x) => x.planets.map((p) => p.owner).join(","))
+    .join(";");
   const mapLayout = useMemo(
     () => createMapLayout(state.systems, state.seed),
-    [state.seed],
+    [state.seed, depositKey],
   );
   const geometry = useMemo(() => createCells(state.systems), [state.seed]); // Geometry is immutable within a seed.
   const owners = state.systems.map((s) => s.owner ?? "n").join(",");
@@ -142,13 +157,13 @@ export default function GalaxyMap({
     target.current = {
       x: Math.max(-150, Math.min(WORLD.width + 150, next.x)),
       y: Math.max(-150, Math.min(WORLD.height + 150, next.y)),
-      z: Math.max(0.18, Math.min(2.5, next.z)),
+      z: Math.max(0.06, Math.min(2.5, next.z)),
     };
     animate();
   };
   const zoom = (factor: number, point?: Point) => {
     const c = target.current,
-      z = Math.max(0.22, Math.min(2.5, c.z * factor)),
+      z = Math.max(0.06, Math.min(2.5, c.z * factor)),
       p = point ?? { x: size.width / 2, y: size.height / 2 };
     aim({
       x: c.x + (p.x - size.width / 2) * (1 / c.z - 1 / z),
@@ -243,7 +258,9 @@ export default function GalaxyMap({
       state.systems.map((s) => {
         const active = s.id === selected,
           hovered = hover === s.id,
-          r = s.star === 4 ? 36 : s.star === 2 ? 23 : 30;
+          r =
+            (s.star === 4 ? 36 : s.star === 2 ? 23 : 30) *
+            BALANCE.galaxy.starScale;
         const visible =
           s.x > camera.x - size.width / camera.z / 2 - 240 &&
           s.x < camera.x + size.width / camera.z / 2 + 240 &&
@@ -257,20 +274,7 @@ export default function GalaxyMap({
             transform={`translate(${s.x} ${s.y})`}
             opacity={emphasized(s.id) || active ? 1 : 0.2}
             className={`system ${active ? "selected" : ""}`}
-            role="button"
-            tabIndex={0}
-            aria-label={`${s.name}, ${s.owner === 0 ? "owned" : s.owner === null ? "neutral" : "rival"} system`}
             data-system={s.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!drag.current.moved) onSelect(s.id);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onSelect(s.id);
-              }
-            }}
             onPointerEnter={() => {
               setHoverAsteroid(false);
               if (!drag.current.active) setHover(s.id);
@@ -280,29 +284,6 @@ export default function GalaxyMap({
             <circle r={r + 15} fill="transparent" />
             {(active || hovered || s.id === 0) && (
               <circle r={r * 2.5} fill="url(#sunGlow)" />
-            )}
-            {active && (
-              <>
-                <circle
-                  r={r + 13}
-                  className="selection-ring"
-                  fill="none"
-                  stroke="#bcdce2"
-                  strokeWidth="1"
-                  strokeDasharray="28 7"
-                />
-                <circle
-                  r={r + 18}
-                  fill="none"
-                  stroke="#87c9d4"
-                  strokeOpacity=".16"
-                  strokeWidth="1"
-                />
-                <path
-                  d={`M-${r + 24} 0h5M${r + 19} 0h5M0 -${r + 24}v5M0 ${r + 19}v5`}
-                  stroke="#c6e5e8"
-                />
-              </>
             )}
             {state.time - s.capturedAt < 4 && (
               <circle
@@ -350,10 +331,38 @@ export default function GalaxyMap({
               <g className="system-interior">
                 {mapLayout.planets[s.id].map((planet, i) => {
                   const { orbit, x: px, y: py } = planet;
-                  const diameter = Math.max(planet.diameter, 9 / camera.z);
+                  const diameter = planet.diameter;
                   return (
-                    <g key={i} className="orbital-planet">
+                    <g
+                      key={i}
+                      className="orbital-planet"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={
+                        planetName(s, i) +
+                        ", " +
+                        (s.planets[i].owner === 0
+                          ? "owned"
+                          : s.planets[i].owner === null
+                            ? "neutral"
+                            : "rival") +
+                        " planet"
+                      }
+                      data-planet={i}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!drag.current.moved) onPlanet(s.id, i);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onPlanet(s.id, i);
+                        }
+                      }}
+                    >
                       <ellipse
+                        pointerEvents="none"
                         rx={orbit}
                         ry={orbit * 0.85}
                         fill="none"
@@ -361,6 +370,29 @@ export default function GalaxyMap({
                         strokeOpacity={active || hovered ? ".18" : ".055"}
                         strokeWidth=".7"
                       />
+                      <circle
+                        cx={px}
+                        cy={py}
+                        r={diameter / 2 + 7}
+                        fill="transparent"
+                        stroke={color(s.planets[i].owner)}
+                        strokeWidth={active && selectedPlanet === i ? 2.5 : 1}
+                        strokeDasharray={
+                          active && selectedPlanet === i ? "4 3" : undefined
+                        }
+                      />
+                      {detail === "close" && (
+                        <text
+                          x={px}
+                          y={py - diameter / 2 - 10}
+                          textAnchor="middle"
+                          fontSize="10"
+                          fill={color(s.planets[i].owner)}
+                        >
+                          {["I", "II", "III", "IV", "V"][i]}
+                          {s.planets[i].shipyard ? " · YARD" : ""}
+                        </text>
+                      )}
                       <image
                         href={asset(planets[planet.kind])}
                         x={px - diameter / 2}
@@ -386,6 +418,12 @@ export default function GalaxyMap({
             {labels && (
               <>
                 <text
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelect(s.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") onSelect(s.id);
+                  }}
                   y={r + 35}
                   textAnchor="middle"
                   className={`system-label ${s.owner === 0 ? "owned-label" : ""}`}
@@ -424,6 +462,9 @@ export default function GalaxyMap({
     [
       state.seed,
       owners,
+      planetKey,
+      selectedPlanet,
+      onPlanet,
       selected,
       hover,
       filter,
@@ -696,7 +737,17 @@ export default function GalaxyMap({
             <polyline
               key={f.id}
               points={f.route
-                .map((id) => `${state.systems[id].x},${state.systems[id].y}`)
+                .map((id, i) => {
+                  const p = planetPosition(
+                    state.systems[id],
+                    i === 0
+                      ? f.planet
+                      : i === f.route.length - 1
+                        ? f.targetPlanet
+                        : -1,
+                  );
+                  return `${p.x},${p.y}`;
+                })
                 .join(" ")}
               className="fleet-route"
               fill="none"
@@ -759,209 +810,177 @@ export default function GalaxyMap({
               )}
           <g className="asteroid-fields">
             {mapLayout.fields.map((field) => {
-              const s = state.systems[field.system];
-              const active = selectedAsteroid && selected === s.id;
-              const hovered = hoverAsteroid && hover === s.id;
+              const x = state.systems[field.system];
               if (
-                Math.abs(field.x - camera.x) >
-                  size.width / camera.z / 2 + 140 ||
-                Math.abs(field.y - camera.y) > size.height / camera.z / 2 + 140
+                Math.abs(field.x - camera.x) > size.width / camera.z / 2 + 30 ||
+                Math.abs(field.y - camera.y) > size.height / camera.z / 2 + 30
               )
                 return null;
-              const art = field.appearance;
-              const diameter = Math.max(art.size, 18 / camera.z);
-              const angle = (art.angle * Math.PI) / 180;
-              const extent =
-                ((Math.abs(Math.cos(angle)) + Math.abs(Math.sin(angle))) *
-                  diameter) /
-                2;
-              const halfWidth = art.drift ? Math.max(84, extent) : extent;
-              const halfHeight = art.drift ? Math.max(56, extent) : extent;
+              const active = selectedAsteroid && selected === x.id;
               return (
-                <g key={s.id} opacity={emphasized(s.id) || active ? 1 : 0.2}>
-                  {(active || hovered) && (
-                    <line
-                      x1={s.x}
-                      y1={s.y}
-                      x2={field.x}
-                      y2={field.y}
-                      stroke="#d4bd86"
-                      strokeOpacity=".4"
-                      strokeDasharray="4 8"
-                      pointerEvents="none"
+                <g
+                  key={field.deposit}
+                  className="asteroid-field"
+                  data-asteroid-system={x.id}
+                  transform={`translate(${field.x} ${field.y})`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={x.name + " asteroid " + field.deposit}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!drag.current.moved) onDeposit(x.id, field.deposit);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDeposit(x.id, field.deposit);
+                    }
+                  }}
+                >
+                  <title>
+                    {x.name} · {field.appearance.material} deposit
+                  </title>
+                  <circle r="13" fill="transparent" />
+                  <image
+                    className="resource-asteroid-art"
+                    href={asset(field.appearance.art)}
+                    x="-9"
+                    y="-9"
+                    width="18"
+                    height="18"
+                  />
+                  {active && (
+                    <circle
+                      r="12"
+                      fill="none"
+                      stroke="#c7ae76"
+                      strokeWidth=".7"
                     />
                   )}
-                  <g
-                    transform={`translate(${field.x} ${field.y})`}
-                    className={`asteroid-field ${art.drift ? "debris-drift" : "single-asteroid"} ${active ? "selected" : ""}`}
-                    data-asteroid-system={s.id}
-                    data-art-variant={art.variant}
-                    style={{ color: art.color }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${s.name} asteroid field`}
-                    aria-pressed={active}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!drag.current.moved) onSelect(s.id, true);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onSelect(s.id, true);
-                      }
-                    }}
-                    onPointerEnter={() => {
-                      if (!drag.current.active) {
-                        setHover(s.id);
-                        setHoverAsteroid(true);
-                      }
-                    }}
-                    onPointerLeave={() => setHover(null)}
-                  >
-                    <rect
-                      className="field-hit-area"
-                      x={-halfWidth - 8}
-                      y={-halfHeight - 8}
-                      width={halfWidth * 2 + 16}
-                      height={halfHeight * 2 + 42}
-                      rx="12"
-                      fill="transparent"
-                      pointerEvents="all"
-                    />
-                    {art.drift && detail !== "far" && (
-                      <g className="mineral-dust" pointerEvents="none">
-                        <ellipse
-                          rx="82"
-                          ry="47"
-                          fill={`url(#mineralDust-${art.variant})`}
-                          transform={`rotate(${art.angle / 3})`}
-                        />
-                        <ellipse
-                          cx="26"
-                          cy="12"
-                          rx="58"
-                          ry="28"
-                          fill={`url(#mineralDust-${art.variant})`}
-                          opacity=".55"
-                        />
-                        {art.fragments.map((fragment, i) => (
-                          <path
-                            key={i}
-                            d={`M${fragment.x} ${fragment.y - fragment.size}l${fragment.size} ${fragment.size * 0.6} ${-fragment.size * 0.3} ${fragment.size} ${-fragment.size * 1.4} ${-fragment.size * 0.25}Z`}
-                            fill={i % 3 === 0 ? art.color : "#9babb6"}
-                            opacity={fragment.opacity}
-                          />
-                        ))}
-                      </g>
-                    )}
-                    <image
-                      className="resource-asteroid-art"
-                      href={asset(art.art)}
-                      x={-diameter / 2}
-                      y={-diameter / 2}
-                      width={diameter}
-                      height={diameter}
-                      transform={`rotate(${art.angle})`}
-                      pointerEvents="none"
-                    />
-                    {(active || hovered) && (
-                      <circle
-                        className="resource-selection"
-                        r={diameter * 0.63}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1"
-                        strokeDasharray="9 6"
-                        pointerEvents="none"
-                      />
-                    )}
-                    {(detail !== "far" || active || hovered) && (
-                      <>
-                        <text
-                          y={halfHeight + 14}
-                          textAnchor="middle"
-                          className="field-name"
-                          pointerEvents="none"
-                        >
-                          {s.name} {art.suffix}
-                        </text>
-                        <text
-                          y={halfHeight + 26}
-                          textAnchor="middle"
-                          className="asteroid-label"
-                          pointerEvents="none"
-                        >
-                          {art.material.toUpperCase()} · MINEABLE
-                        </text>
-                      </>
-                    )}
-                  </g>
                 </g>
               );
             })}
           </g>
-          {state.battles.map((b) => (
-            <g
-              key={b.id}
-              transform={`translate(${state.systems[b.system].x} ${state.systems[b.system].y})`}
-              className="map-battle"
-              onClick={() => onSelect(b.system)}
-            >
-              <circle
-                r="52"
-                fill="none"
-                stroke="#e6a179"
-                strokeDasharray="6 7"
-              />
-              {detail !== "far" &&
-                b.owners.flatMap((owner, side) =>
-                  state.fleets
-                    .filter(
-                      (f) =>
-                        f.system === b.system &&
-                        f.owner === owner &&
-                        !moving(f),
-                    )
-                    .flatMap((f) => f.units)
-                    .slice(0, 3)
-                    .map((u, i) => (
-                      <image
-                        key={`${side}-${i}`}
-                        href={asset(ships[shipClasses[u.kind]].art)}
-                        x={side === 0 ? -47 : 23}
-                        y={-28 + i * 20}
-                        width="22"
-                        height="29"
-                        transform={side === 0 ? "rotate(22)" : "rotate(-22)"}
-                      />
-                    )),
-                )}
-              <path
-                d="M-35 -16 32 20M-24 24 29-28"
-                stroke="#f1bc80"
-                strokeWidth="2"
-              />
-              <text y="-60" textAnchor="middle">
-                BATTLE · {b.casualties.reduce((a, c) => a + c, 0)} LOST
-              </text>
-            </g>
-          ))}
-          {state.systems
-            .filter((x) => x.capture)
-            .map((x) => (
-              <g key={x.id} transform={`translate(${x.x} ${x.y})`}>
+          {state.systems.flatMap((x) =>
+            x.planets
+              .filter((p) => p.capture)
+              .map((p) => {
+                const pos = planetPosition(x, p.id);
+                return (
+                  <circle
+                    key={x.id + ":" + p.id}
+                    cx={pos.x}
+                    cy={pos.y}
+                    r="28"
+                    fill="none"
+                    stroke="#acdade"
+                    strokeWidth="3"
+                    strokeDasharray={`${(p.capture!.elapsed / BALANCE.captureSeconds) * 176} 176`}
+                    pointerEvents="none"
+                  />
+                );
+              }),
+          )}
+          {state.battles.map((b) => {
+            const pos = planetPosition(state.systems[b.system], b.planet);
+            const location = (id: number) => {
+              const f = state.fleets.find((f) => f.id === id);
+              return f
+                ? fleetPosition(state, f)
+                : { x: pos.x + (id % 2 ? -15 : 15), y: pos.y + 15 };
+            };
+            return (
+              <g key={b.id} className="map-battle" pointerEvents="none">
                 <circle
-                  r="47"
+                  cx={pos.x}
+                  cy={pos.y}
+                  r="65"
                   fill="none"
-                  stroke="#acdade"
-                  strokeWidth="3"
-                  strokeDasharray={`${(x.capture!.elapsed / BALANCE.captureSeconds) * 295} 295`}
-                  transform="rotate(-90)"
+                  stroke="#d49c7a"
+                  strokeDasharray="5 9"
                 />
+                <text x={pos.x} y={pos.y - 75} textAnchor="middle">
+                  {state.time - b.start < BALANCE.combat.approach
+                    ? "APPROACH"
+                    : "ENGAGED"}{" "}
+                  · {b.casualties.reduce((a, c) => a + c, 0)} LOST
+                </text>
+                {b.shots.slice(0, 16).map((shot, i) => {
+                  const from = location(shot.from),
+                    to = location(shot.to);
+                  return (
+                    <line
+                      key={state.time + ":" + i}
+                      className="combat-volley"
+                      x1={from.x}
+                      y1={from.y}
+                      x2={to.x}
+                      y2={to.y}
+                      stroke={shot.railgun ? "#a4edff" : "#ffd09a"}
+                      strokeWidth={shot.railgun ? 2.5 : 1}
+                      style={{ animationDelay: (i % 4) * 0.12 + "s" }}
+                    />
+                  );
+                })}
               </g>
-            ))}
+            );
+          })}
+          {state.miners
+            .filter((m) => m.owner === 0 || state.devReveal)
+            .map((m) => {
+              const x = state.systems[m.system],
+                base = planetPosition(
+                  x,
+                  x.planets.find((p) => p.owner === m.owner)?.id ?? 0,
+                ),
+                d = x.deposits.find((d) => d.id === m.deposit),
+                end = d
+                  ? { x: x.x + d.x, y: x.y + d.y }
+                  : { x: x.x + 100, y: x.y };
+              const t =
+                m.status === "Idle"
+                  ? 0
+                  : m.status === "Outbound"
+                    ? m.elapsed / 8
+                    : m.status === "Returning"
+                      ? 1 - m.elapsed / 8
+                      : 1;
+              return (
+                <g
+                  key={m.id}
+                  transform={`translate(${base.x + (end.x - base.x) * t} ${base.y + (end.y - base.y) * t + 25})`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={x.name + " civilian miner"}
+                  onClick={() => onSelect(x.id, true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") onSelect(x.id, true);
+                  }}
+                >
+                  <rect
+                    x="-8"
+                    y="-5"
+                    width="16"
+                    height="10"
+                    rx="3"
+                    fill="#95bab3"
+                    stroke="#f4dd9c"
+                  />
+                  <rect
+                    x="-4"
+                    y="-8"
+                    width="8"
+                    height="16"
+                    rx="2"
+                    fill="#435a69"
+                  />
+                  <text y="22" textAnchor="middle" fontSize="9" fill="#dfc88f">
+                    MINER · {m.status.toUpperCase()}
+                  </text>
+                </g>
+              );
+            })}
           {state.fleets.map((f) => {
             if (
               f.owner !== 0 &&
@@ -971,15 +990,10 @@ export default function GalaxyMap({
             )
               return null;
             const p = fleetPosition(state, f),
-              selectedF = f.id === selectedFleet,
+              selectedF = selectedFleetIds.includes(f.id),
               isMoving = moving(f),
-              offset = isMoving
-                ? 0
-                : 48 +
-                  state.fleets.filter(
-                    (x) => x.system === f.system && !moving(x) && x.id < f.id,
-                  ).length *
-                    25;
+              strongest = Math.max(...f.units.map((u) => u.kind)),
+              diameter = 24 + strongest * 4;
             return (
               <g
                 key={f.id}
@@ -988,35 +1002,26 @@ export default function GalaxyMap({
                 aria-label={`${f.name} fleet`}
                 className={`fleet-marker ${selectedF ? "active" : ""}`}
                 style={{
-                  transform: `translate(${p.x + offset}px, ${p.y - (!isMoving ? 30 : 0)}px)`,
+                  transform: `translate(${p.x}px, ${p.y}px)`,
                   transition: paused ? "none" : "transform 210ms linear",
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!drag.current.moved) onFleet(f.id);
+                  if (!drag.current.moved) onFleet(f.id, e.shiftKey);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") onFleet(f.id);
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onFleet(f.id, e.shiftKey);
+                  }
                 }}
               >
                 <circle r="16" fill="transparent" />
-                {f.neutral && (
-                  <image
-                    href={asset(
-                      f.neutral === "pirates"
-                        ? "war2_pirate_ragtooth.webp"
-                        : `original/${f.neutral}.svg`,
-                    )}
-                    x="-26"
-                    y="-26"
-                    width="52"
-                    height="52"
-                  />
-                )}
                 {selectedF && (
                   <circle
                     r="16"
-                    fill="#0b1820"
+                    fill="none"
                     stroke="#a5d9e1"
                     strokeOpacity=".8"
                     strokeWidth="1"
@@ -1031,28 +1036,30 @@ export default function GalaxyMap({
                     transform={`rotate(${p.angle})`}
                   />
                 )}
-                <path
-                  d="m-5-5 13 5-13 5 3-5z"
-                  fill={color(f.owner)}
-                  stroke="#08111b"
-                  strokeWidth="1"
-                  transform={`rotate(${isMoving ? p.angle : -45})`}
+                <image
+                  href={asset(
+                    f.neutral
+                      ? f.neutral === "pirates"
+                        ? "war2_pirate_ragtooth.webp"
+                        : "original/" + f.neutral + ".svg"
+                      : ships[shipClasses[strongest]].art,
+                  )}
+                  x={-diameter / 2}
+                  y={-diameter / 2}
+                  width={diameter}
+                  height={diameter}
+                  transform={`rotate(${isMoving ? p.angle + 90 : 0})`}
                 />
-                {f.status === "Mining" && (
-                  <circle
-                    r="13"
-                    fill="none"
-                    stroke="#d1b878"
-                    strokeWidth="1.6"
-                    strokeDasharray={`${(f.miningElapsed / BALANCE.miningSeconds) * 81} 81`}
-                    transform="rotate(-90)"
-                  />
-                )}
-                {selectedF && (
-                  <text x="19" y="-10" className="fleet-label">
-                    {f.name}
-                  </text>
-                )}
+                <text
+                  y={diameter / 2 + 11}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill={color(f.owner)}
+                >
+                  {selectedF ? f.name + " · " : ""}
+                  {f.units.length}{" "}
+                  {f.neutral === "pirates" ? "PIRATES" : "SHIPS"}
+                </text>
               </g>
             );
           })}
@@ -1104,9 +1111,9 @@ export default function GalaxyMap({
           title="Entire galaxy"
           onClick={() =>
             aim({
-              x: 1600,
-              y: 1150,
-              z: Math.min(size.width / 3400, size.height / 2450),
+              x: WORLD.width / 2,
+              y: WORLD.height / 2,
+              z: Math.min(size.width / WORLD.width, size.height / WORLD.height),
             })
           }
         >
@@ -1128,7 +1135,15 @@ export default function GalaxyMap({
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (e.key === "Enter") aim({ x: 1600, y: 1150, z: 0.3 });
+            if (e.key === "Enter")
+              aim({
+                x: WORLD.width / 2,
+                y: WORLD.height / 2,
+                z: Math.min(
+                  size.width / WORLD.width,
+                  size.height / WORLD.height,
+                ),
+              });
           }}
           onClick={(e) => {
             const matrix = e.currentTarget.getScreenCTM();
@@ -1193,7 +1208,7 @@ export default function GalaxyMap({
             </span>
             <small>
               {hoverAsteroid
-                ? "Click the field to send a mining fleet"
+                ? "Click a deposit to manage its civilian miner"
                 : "Click to inspect system"}
             </small>
           </div>

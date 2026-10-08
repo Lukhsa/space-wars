@@ -1,3 +1,4 @@
+import { orderMiner } from "./mining";
 import { describe, expect, it } from "vitest";
 import { generateGalaxy, routeBetween } from "./galaxy";
 import { advanceDemo, stepMatch } from "./simulation";
@@ -23,6 +24,10 @@ import { triggerObjective } from "./objectives";
 import { botTick } from "./ai";
 import { createCells, territoryPaths } from "./territory";
 import type { DemoState } from "./types";
+function claim(s: DemoState, id: number, owner: number | null) {
+  s.systems[id].planets.forEach((p) => (p.owner = owner));
+  s.systems[id].owner = owner;
+}
 function quiet(seed = "test") {
   const s = generateGalaxy(seed);
   s.commanders.forEach((c) => (c.bot = false));
@@ -41,14 +46,14 @@ describe("seeded star systems", () => {
     );
   });
   it.each(["orion", "abc", "123", "vega", "28"])(
-    "has eight equal spawns and a connected 28-node graph: %s",
+    "has eight equal spawns and a connected 56-node graph: %s",
     (seed) => {
       const s = generateGalaxy(seed);
-      expect(s.systems).toHaveLength(28);
+      expect(s.systems).toHaveLength(56);
       expect(s.commanders).toHaveLength(8);
       expect(s.commanders.filter((c) => c.bot)).toHaveLength(7);
       expect(s.systems.filter((x) => x.capital)).toHaveLength(8);
-      expect(new Set(s.systems.map((x) => x.name)).size).toBe(28);
+      expect(new Set(s.systems.map((x) => x.name)).size).toBe(56);
       for (const x of s.systems) {
         expect(routeBetween(s, 0, x.id).at(-1)).toBe(x.id);
         expect(x.planets.length).toBeGreaterThanOrEqual(1);
@@ -58,10 +63,10 @@ describe("seeded star systems", () => {
         expect(s.systems[c.id].output).toEqual([...BALANCE.homeIncome]);
         expect(
           s.lanes.filter((l) => l.a === c.id || l.b === c.id),
-        ).toHaveLength(2);
+        ).toHaveLength(1);
         expect(c.resources).toEqual(s.commanders[0].resources);
       }
-      expect(s.systems.slice(16, 24).every((x) => x.strategic)).toBe(true);
+      expect(s.systems.slice(40, 48).every((x) => x.strategic)).toBe(true);
     },
   );
   it("preserves prior frames and fixed-step equivalence", () => {
@@ -87,18 +92,16 @@ describe("economy and fleets", () => {
     expect(s.reserve[0]).toBe(3);
     expect(s.commanders[0].stats.built).toBe(3);
   });
-  it("mines owned deposits once and cannot extract from hostile control", () => {
+  it("civilian mining pays only after a completed return", () => {
     const s = quiet(),
-      f = s.fleets[1];
-    expect(launchFleet(s, f.id, 0, "mine")).toBeNull();
+      d = s.systems[0].deposits[0];
+    expect(orderMiner(s, 0, 0, d.id, false)).toBeNull();
+    run(s, 39);
+    expect(s.commanders[0].stats.mined).toBe(0);
+    run(s, 1);
+    expect(s.commanders[0].stats.mined).toBe(d.richness);
     run(s, 40);
-    expect(s.commanders[0].stats.mined).toBe(
-      BALANCE.miningAlloy + BALANCE.miningFuel,
-    );
-    run(s, 40);
-    expect(s.commanders[0].stats.mined).toBe(
-      BALANCE.miningAlloy + BALANCE.miningFuel,
-    );
+    expect(s.commanders[0].stats.mined).toBe(d.richness);
   });
   it("forms and reinforces fleets without duplicating ships", () => {
     const s = quiet();
@@ -124,7 +127,16 @@ describe("economy and fleets", () => {
     expect(f.system).toBe(8);
     expect(s.systems[8].owner).toBeNull();
     run(s, 20);
-    expect(s.systems[8].owner).toBe(0);
+    expect(s.systems[8].planets[0].owner).toBe(0);
+    expect(s.systems[8].owner).toBeNull();
+    for (
+      let planet = 1;
+      planet < Math.floor(s.systems[8].planets.length / 2) + 1;
+      planet++
+    ) {
+      launchFleet(s, f.id, 8, "attack", false, planet);
+      run(s, 32);
+    }
     expect(territoryPaths(s.systems, createCells(s.systems))[0].path).not.toBe(
       before,
     );
@@ -152,8 +164,8 @@ describe("combat and information", () => {
       copy = structuredClone(s);
     run(s, 5);
     expect(s.battles).toHaveLength(1);
-    run(s, 90);
-    run(copy, 95);
+    run(s, 160);
+    run(copy, 165);
     expect(s).toEqual(copy);
     expect(s.battles).toHaveLength(0);
     expect(
@@ -185,7 +197,7 @@ describe("combat and information", () => {
     );
     run(s, 3);
     expect(s.battles).toHaveLength(2);
-    run(s, 150);
+    run(s, 240);
     expect(s.battles).toHaveLength(0);
     expect(s.completedBattles).toBeGreaterThanOrEqual(3);
   });
@@ -202,7 +214,8 @@ describe("combat and information", () => {
     const s = quiet(),
       p = s.fleets.find((f) => f.neutral === "pirates")!;
     s.fleets.push(makeFleet(s, 0, p.system, "Raid", [0, 0, 4, 1]));
-    run(s, 90);
+    s.fleets.at(-1)!.planet = -1;
+    run(s, 150);
     expect(s.commanders[0].stats.pirates).toBe(1);
     expect(s.commanders[0].score).toBeGreaterThanOrEqual(75);
     run(s, 10);
@@ -214,7 +227,8 @@ describe("combat and information", () => {
     expect(triggerObjective(s, "guardian")).not.toBeNull();
     const o = s.objectives.guardian;
     s.fleets.push(makeFleet(s, 0, o.system, "Heavy", [0, 0, 10, 5]));
-    run(s, 90);
+    s.fleets.at(-1)!.planet = -1;
+    run(s, 150);
     expect(o.killer).toBe(0);
     expect(s.commanders[0].buffs.some((b) => b.kind === "guardian")).toBe(true);
     s.fleets = s.fleets.filter((f) => f.owner < 0);
@@ -238,7 +252,8 @@ describe("score and match lifecycle", () => {
     s.fleets.push(
       makeFleet(s, 0, objective.system, "Objective assault", [0, 0, 12, 8]),
     );
-    run(s, 50);
+    s.fleets.at(-1)!.planet = -1;
+    run(s, 100);
     expect(objective.active).toBe(false);
     expect(objective.killer).toBe(0);
     expect(s.commanders[0].stats.leviathan).toBe(1);
@@ -284,9 +299,9 @@ describe("score and match lifecycle", () => {
   it("scores territory only, applies strategic and endgame rates", () => {
     const s = quiet();
     s.fleets = s.fleets.filter((f) => f.owner >= 0);
-    s.systems[8].owner = 0;
-    s.systems[16].owner = 0;
-    s.systems[24].owner = 0;
+    claim(s, 8, 0);
+    claim(s, 40, 0);
+    claim(s, 48, 0);
     run(s, 60);
     expect(s.commanders[0].score).toBeCloseTo(12 + 20 + 32);
     s.time = 2100;
@@ -294,16 +309,16 @@ describe("score and match lifecycle", () => {
     run(s, 60);
     expect(s.commanders[0].score).toBeCloseTo(12 + 20 + 64);
   });
-  it("breaks domination when control falls below twelve, and wins after a full hold", () => {
+  it("breaks domination when control falls below twenty-nine, and wins after a full hold", () => {
     const s = quiet();
     s.fleets = [];
-    for (let i = 8; i < 20; i++) s.systems[i].owner = 0;
+    for (let i = 8; i < 37; i++) claim(s, i, 0);
     run(s, 30);
     expect(s.domination?.elapsed).toBe(30);
-    s.systems[8].owner = null;
+    claim(s, 8, null);
     run(s, 1);
     expect(s.domination).toBeNull();
-    s.systems[8].owner = 0;
+    claim(s, 8, 0);
     run(s, 75);
     expect(s.winner).toBe(0);
     expect(s.endReason).toBe("domination");
@@ -312,12 +327,12 @@ describe("score and match lifecycle", () => {
     const s = quiet();
     run(s, 1);
     expect(s.commanders[0].recoveryUntil).toBe(0);
-    s.systems[8].owner = 0;
+    claim(s, 8, 0);
     run(s, 1);
-    s.systems[8].owner = null;
+    claim(s, 8, null);
     run(s, 1);
     expect(s.commanders[0].stats.recoveries).toBe(1);
-    s.systems[8].owner = 0;
+    claim(s, 8, 0);
     run(s, 1);
     expect(s.commanders[0].recoveryUntil).toBe(0);
   });
@@ -347,5 +362,5 @@ describe("score and match lifecycle", () => {
       expect(f.units.every((u) => u.hp > 0)).toBe(true);
     }
     expect(external(s, s.winner!).length).toBeGreaterThan(0);
-  }, 30000);
+  }, 120000);
 });

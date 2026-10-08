@@ -1,3 +1,4 @@
+import { orderMiner, recallMiner, commissionMiner } from "./mining";
 import { describe, expect, it } from "vitest";
 import { BALANCE } from "./balance";
 import { generateGalaxy } from "./galaxy";
@@ -8,17 +9,21 @@ import {
   defenseTick,
   homeDefenses,
 } from "./defenses";
-import { buildShip, launchFleet, retreatFleet } from "./commands";
+import { buildShip, launchFleet } from "./commands";
 import { makeFleet } from "./model";
 import { advanceDemo, stepMatch } from "./simulation";
 import { botTick } from "./ai";
 import type { DemoState, DefenseKind, Installation } from "./types";
+function claim(s: DemoState, id: number, owner: number | null) {
+  s.systems[id].planets.forEach((p) => (p.owner = owner));
+  s.systems[id].owner = owner;
+}
 function quiet() {
   const s = generateGalaxy("defense-acceptance");
   s.commanders.forEach((c) => {
     c.bot = false;
   });
-  s.systems[8].owner = 0;
+  claim(s, 8, 0);
   return s;
 }
 function run(s: DemoState, n: number) {
@@ -96,7 +101,7 @@ describe("planetary defense lifecycle", () => {
   it("bounds crews and increases costs on additional planets", () => {
     const s = quiet();
     rich(s);
-    s.systems[9].owner = 0;
+    claim(s, 9, 0);
     expect(defenseQuote(s.systems[8], 1, "station")!.alloy).toBeGreaterThan(
       defenseQuote(s.systems[8], 0, "station")!.alloy,
     );
@@ -136,7 +141,7 @@ describe("planetary defense lifecycle", () => {
     defenseTick(s);
     expect(d.hp).toBe(400);
     expect(d.job).not.toBeNull();
-    expect(constructDefense(s, 0, 8, 1, "railgun")).toMatch(/enemies/);
+    expect(constructDefense(s, 0, 8, 0, "railgun")).toMatch(/enemies/);
   });
 });
 describe("defense combat and capture", () => {
@@ -145,13 +150,13 @@ describe("defense combat and capture", () => {
     const d = installed(s, "station");
     const f = makeFleet(s, 1, 8, "Siege", [0, 2, 3, 1]);
     s.fleets.push(f);
-    run(s, 1);
+    run(s, 8);
     expect(d.hp).toBeLessThan(800);
     expect(f.units.some((u) => u.hp < BALANCE.ships[u.kind].hull)).toBe(true);
     expect(s.systems[8].capture).toBeNull();
     expect(s.battles).toHaveLength(1);
     run(s, 100);
-    expect(s.systems[8].owner).toBe(1);
+    expect(s.systems[8].planets[0].owner).toBe(1);
     expect(s.systems[8].installations).toEqual([]);
     expect(s.commanders[0].telemetry.defensesDestroyed).toBe(1);
     expect(s.commanders[1].telemetry.salvageAlloy).toBe(0);
@@ -161,7 +166,7 @@ describe("defense combat and capture", () => {
     installed(s, "railgun", 3);
     const f = makeFleet(s, 1, 8, "Mixed", [1, 0, 0, 1]);
     s.fleets.push(f);
-    run(s, 1);
+    run(s, 9);
     const capital = f.units.find((u) => u.kind === 3)!;
     const hp = capital.hp;
     expect(hp).toBeLessThan(2500);
@@ -174,7 +179,7 @@ describe("defense combat and capture", () => {
     installed(a, "railgun");
     const small = makeFleet(a, 1, 8, "Small", [1, 0, 0, 0]);
     a.fleets.push(small);
-    run(a, 1);
+    run(a, 9);
     expect(180 - small.units[0].hp).toBeLessThan((2500 - hp) * 0.5);
   });
   it("maximum multi-planet fortification remains conquerable and produces no stalled battle", () => {
@@ -186,7 +191,7 @@ describe("defense combat and capture", () => {
       }
     s.fleets.push(makeFleet(s, 1, 8, "Siege armada", [6, 6, 10, 10]));
     run(s, 180);
-    expect(s.systems[8].owner).toBe(1);
+    expect(s.systems[8].planets[0].owner).toBe(1);
     expect(s.battles).toHaveLength(0);
   });
   it("never turns an installation into a mobile fleet and cancels destroyed upgrade jobs", () => {
@@ -197,7 +202,7 @@ describe("defense combat and capture", () => {
     const before = s.fleets.map((f) => f.id);
     expect(launchFleet(s, -100, 9, "attack")).toBeTruthy();
     s.fleets.push(makeFleet(s, 1, 8, "Overwhelming", [0, 0, 0, 20]));
-    run(s, 1);
+    run(s, 10);
     expect(d.hp).toBe(0);
     expect(d.job).toBeNull();
     expect(s.fleets.filter((f) => before.includes(f.id))).toHaveLength(
@@ -209,15 +214,15 @@ describe("defense combat and capture", () => {
     constructDefense(s, 0, 8, 0, "railgun");
     s.fleets.push(makeFleet(s, 1, 8, "Occupier", [3, 0, 0, 0]));
     run(s, 25);
-    expect(s.systems[8].owner).toBe(1);
+    expect(s.systems[8].planets[0].owner).toBe(1);
     expect(s.systems[8].installations).toHaveLength(0);
     expect(s.commanders[1].telemetry.salvageAlloy).toBe(0);
     run(s, 60);
     expect(s.systems[8].installations).toHaveLength(0);
   });
-  it("intercepts travel through hostile stationary defenses", () => {
+  it("planetary defenses cannot attack fleets passing through another orbit", () => {
     const s = quiet();
-    s.systems[8].owner = 1;
+    claim(s, 8, 1);
     installed(s, "station");
     const f = s.fleets.find((f) => f.owner === 0)!;
     f.route = [0, 8, 16];
@@ -225,59 +230,43 @@ describe("defense combat and capture", () => {
     f.status = "Moving";
     run(s, 1);
     expect(f.system).toBe(8);
-    expect(f.route).toEqual([]);
-    expect(f.status).toBe("Battle");
+    expect(f.route).toEqual([8, 16]);
+    expect(f.planet).toBe(-1);
+    expect(f.status).toBe("Moving");
   });
 });
 describe("repeat mining and economy", () => {
-  it("pays exactly once per cycle, repeats, and cancels without a partial reward", () => {
+  it("repeats civilian trips and recalls without partial extraction rewards", () => {
     const s = quiet(),
-      f = s.fleets.find((f) => f.owner === 0)!;
-    expect(launchFleet(s, f.id, 0, "mine", true)).toBeNull();
+      d = s.systems[0].deposits[0];
+    orderMiner(s, 0, 0, d.id, true);
     run(s, 120);
-    expect(s.commanders[0].telemetry.minedAlloy).toBe(270);
-    expect(f.status).toBe("Mining");
+    expect(s.commanders[0].telemetry.minedAlloy).toBe(3 * d.richness);
     run(s, 20);
-    launchFleet(s, f.id, 0, "defend");
+    recallMiner(s, 0, 0);
     run(s, 60);
-    expect(s.commanders[0].telemetry.minedAlloy).toBe(270);
+    expect(s.commanders[0].telemetry.minedAlloy).toBe(3 * d.richness);
   });
-  it("bounds extraction capacity and rejects unowned mining orders", () => {
-    const s = quiet(),
-      fs = s.fleets.filter((f) => f.owner === 0);
-    launchFleet(s, fs[0].id, 0, "mine", true);
-    expect(launchFleet(s, fs[1].id, 0, "mine", true)).toMatch(/assigned/);
-    expect(launchFleet(s, fs[1].id, 9, "mine", true)).toMatch(/Control/);
+  it("limits each controlled system to one civilian miner and rejects military extraction", () => {
+    const s = quiet();
+    expect(commissionMiner(s, 0, 0)).toMatch(/already/);
+    expect(commissionMiner(s, 0, 9)).toMatch(/majority/);
+    expect(launchFleet(s, s.fleets[0].id, 0, "mine")).toMatch(/civilian/);
   });
-  it("cancels repeat orders and partial cycles upon battle, ownership loss, or retreat", () => {
-    const s = quiet(),
-      f = s.fleets.find((f) => f.owner === 0)!;
-    f.system = 8;
-    launchFleet(s, f.id, 8, "mine", true);
-    run(s, 20);
-    s.fleets.push(makeFleet(s, 1, 8, "Interruption", [1, 0, 0, 0]));
+  it("losing majority removes the civilian slot and its unbanked cargo", () => {
+    const s = quiet();
+    orderMiner(s, 0, 0, s.systems[0].deposits[0].id, true);
+    run(s, 32);
+    claim(s, 0, 1);
     run(s, 1);
-    expect(f.repeatMining).toBe(false);
-    expect(f.miningElapsed).toBe(0);
+    expect(s.miners.some((m) => m.system === 0)).toBe(false);
     expect(s.commanders[0].telemetry.minedAlloy).toBe(0);
-    const other = quiet(),
-      miner = other.fleets[0];
-    launchFleet(other, miner.id, 0, "mine", true);
-    other.systems[0].owner = 1;
-    run(other, 1);
-    expect(miner.repeatMining).toBe(false);
-    const retreat = quiet(),
-      r = retreat.fleets[0];
-    r.system = 8;
-    launchFleet(retreat, r.id, 8, "mine", true);
-    expect(retreatFleet(retreat, r.id)).toBeNull();
-    expect(r.repeatMining).toBe(false);
   });
   it("sustained extraction supports materially more shipbuilding than an identical no-mining economy", () => {
     const ships = [false, true].map((mine) => {
       const s = quiet();
-      s.systems[8].owner = null;
-      if (mine) launchFleet(s, s.fleets[0].id, 0, "mine", true);
+      claim(s, 8, null);
+      if (mine) orderMiner(s, 0, 0, s.systems[0].deposits[0].id, true);
       for (let i = 0; i < 1200; i++) {
         if (i % 25 === 0) buildShip(s, "Frigate");
         stepMatch(s);
@@ -290,7 +279,7 @@ describe("repeat mining and economy", () => {
   it("normal and accelerated time use identical defense, combat and mining rules", () => {
     const s = quiet();
     constructDefense(s, 0, 8, 0, "station");
-    launchFleet(s, s.fleets[0].id, 0, "mine", true);
+    orderMiner(s, 0, 0, s.systems[0].deposits[0].id, true);
     let slow = structuredClone(s);
     for (let i = 0; i < 160; i++) slow = advanceDemo(slow, 0.5);
     expect(advanceDemo(s, 80)).toEqual(slow);

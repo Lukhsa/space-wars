@@ -2,6 +2,8 @@ import { BALANCE, type Strategic } from "./balance";
 import { randomFrom } from "./random";
 import { distance } from "./routes";
 import { makeFleet } from "./model";
+import { makePlanet } from "./planets";
+import { seedDeposits, makeMiner } from "./mining";
 import { homeDefenses } from "./defenses";
 import type { Commander, DemoState, Lane, Personality, System } from "./types";
 export { randomFrom } from "./random";
@@ -118,62 +120,80 @@ export function generateGalaxy(
     intel: {},
   }));
   const rotation = random() * 0.16;
-  const systems: System[] = Array.from({ length: 28 }, (_, id) => {
-    const ring = Math.floor(id / 8),
-      slot = id % 8;
-    const angle =
-      (ring === 3 ? (slot * Math.PI) / 2 : (slot * Math.PI) / 4) +
-      Math.PI * 0.72 +
-      rotation +
-      (ring === 1 ? 0.12 : 0) +
-      (random() - 0.5) * 0.09;
-    const rx = [1080, 760, 445, 170][ring],
-      ry = [790, 555, 335, 145][ring];
-    const x = 1600 + Math.cos(angle) * rx + (random() - 0.5) * 42,
-      y = 1150 + Math.sin(angle) * ry + (random() - 0.5) * 42;
-    const planet = Math.floor(random() * 8),
-      belts = id < 16 ? 1 : Math.floor(random() * 3);
-    const s: System = {
-      id,
-      name: names[id],
-      installations: id < 8 ? homeDefenses() : [],
-      x,
-      y,
-      owner: id < 8 ? id : null,
-      capital: id < 8,
-      planet,
-      star: Math.floor(random() * 8),
-      planets: Array.from(
-        { length: 2 + Math.floor(random() * 3) },
-        (_, i) => (planet + i * 3) % 8,
-      ),
-      belts,
-      asteroid: belts > 0,
-      population: 0,
-      defense: 0,
-      richness: Math.round(BALANCE.miningAlloy * BALANCE.miningRichness[ring]),
-      scouted: id === 0,
-      capturedAt: -100,
-      output: [
-        ...(id < 8
-          ? BALANCE.homeIncome
-          : id < 16
-            ? BALANCE.expansionIncome
-            : id < 24
-              ? BALANCE.midIncome
-              : BALANCE.coreIncome),
-      ],
-      region: id < 8 ? "Home" : id < 16 ? "Frontier" : id < 24 ? "Mid" : "Core",
-      capture: null,
-    };
-    if (id < 8) {
-      commanders[id].center = { x, y };
-      s.planets = [0, 2, 5];
-      s.star = id;
-      s.belts = 1;
-    }
-    return s;
-  });
+  const systems: System[] = Array.from(
+    { length: BALANCE.galaxy.systems },
+    (_, id) => {
+      const ring = Math.floor(id / 8),
+        slot = id % 8;
+      const angle =
+        (slot * Math.PI) / 4 +
+        Math.PI * 0.72 +
+        rotation +
+        (ring === 1 ? 0.12 : 0) +
+        (random() - 0.5) * 0.09;
+      const rx = 4100 - ring * 570,
+        ry = rx * 0.9;
+      const x = 5000 + Math.cos(angle) * rx + (random() - 0.5) * 42,
+        y = 4500 + Math.sin(angle) * ry + (random() - 0.5) * 42;
+      const planet = Math.floor(random() * 8),
+        belts = id < 16 ? 1 : Math.floor(random() * 3);
+      const s: System = {
+        id,
+        name:
+          names[id] ??
+          `${["Arden", "Boreal", "Cinder", "Dusk", "Eos", "Farpoint", "Gale", "Horizon"][slot]} ${ring + 1}`,
+        installations: id < 8 ? homeDefenses() : [],
+        x,
+        y,
+        owner: id < 8 ? id : null,
+        capital: id < 8,
+        planet,
+        star: Math.floor(random() * 8),
+        planets: Array.from({ length: 3 + Math.floor(random() * 3) }, (_, i) =>
+          makePlanet(
+            i,
+            (planet + i * 3) % 8,
+            id < 8 ? id : null,
+            i === 0 && (id < 8 || (id >= 24 && id < 32) || id >= 48),
+          ),
+        ),
+        belts,
+        asteroid: belts > 0,
+        population: 0,
+        defense: 0,
+        richness: Math.round(
+          BALANCE.miningAlloy *
+            BALANCE.miningRichness[id < 8 ? 0 : id < 32 ? 1 : id < 48 ? 2 : 3],
+        ),
+        deposits: [],
+        nextDeposit: 0,
+        scouted: id === 0,
+        capturedAt: -100,
+        output: [
+          ...(id < 8
+            ? BALANCE.homeIncome
+            : id < 32
+              ? BALANCE.expansionIncome
+              : id < 48
+                ? BALANCE.midIncome
+                : BALANCE.coreIncome),
+        ],
+        region:
+          id < 8 ? "Home" : id < 32 ? "Frontier" : id < 48 ? "Mid" : "Core",
+        capture: null,
+      };
+      if (id < 8) {
+        commanders[id].center = { x, y };
+        s.planets = [0, 2, 5].map((art, i) => makePlanet(i, art, id, i === 0));
+        s.planets[0].reserve = commanders[id].reserve;
+        s.planets[0].queue = commanders[id].queue;
+        s.star = id;
+        s.belts = 1;
+      }
+      seedDeposits(s, seed);
+      return s;
+    },
+  );
   const bonus: Strategic[] = [
     "forge",
     "relay",
@@ -186,7 +206,7 @@ export function generateGalaxy(
   ];
   const shift = Math.floor(random() * 8);
   for (let i = 0; i < 8; i++)
-    systems[16 + i].strategic = bonus[(i + shift) % 8];
+    systems[40 + i].strategic = bonus[(i + shift) % 8];
   const lanes: Lane[] = [];
   const edge = (a: number, b: number) => {
     if (
@@ -194,21 +214,21 @@ export function generateGalaxy(
     )
       lanes.push({ a, b, length: distance(systems[a], systems[b]) });
   };
-  for (let i = 0; i < 8; i++) {
-    edge(i, 8 + i);
-    edge(i, 8 + ((i + 7) % 8));
-    edge(8 + i, 16 + i);
-    edge(8 + i, 16 + ((i + 7) % 8));
-    edge(16 + i, 16 + ((i + 1) % 8));
-    edge(16 + i, 24 + Math.floor(i / 2));
-  }
-  for (let i = 0; i < 4; i++) edge(24 + i, 24 + ((i + 1) % 4));
+  for (let ring = 0; ring < 7; ring++)
+    for (let i = 0; i < 8; i++) {
+      const id = ring * 8 + i;
+      if (ring < 6) edge(id, id + 8);
+      if (ring >= 3) edge(id, ring * 8 + ((i + 1) % 8));
+      if (ring >= 3 && ring < 6) edge(id, (ring + 1) * 8 + ((i + 1) % 8));
+    }
   const state: DemoState = {
     seed,
     systems,
     lanes,
     commanders,
     fleets: [],
+    miners: [],
+    pirateCamps: [],
     resources: commanders[0].resources,
     reserve: commanders[0].reserve,
     queue: commanders[0].queue,
@@ -244,7 +264,7 @@ export function generateGalaxy(
         active: false,
         spawned: false,
         fleet: null,
-        system: 24 + Math.floor(random() * 4),
+        system: 48 + Math.floor(random() * 8),
         killer: null,
         nextMove: 0,
       },
@@ -252,7 +272,7 @@ export function generateGalaxy(
         active: false,
         spawned: false,
         fleet: null,
-        system: 24 + Math.floor(random() * 4),
+        system: 48 + Math.floor(random() * 8),
         killer: null,
         nextMove: 0,
       },
@@ -273,28 +293,23 @@ export function generateGalaxy(
         [...BALANCE.startingFleet],
       ),
     );
-    state.fleets.push(
-      makeFleet(
-        state,
-        c.id,
-        c.id,
-        c.id === 0 ? "Mining Group Alpha" : `${c.name} Prospectors`,
-        [...BALANCE.startingMiner],
-      ),
-    );
+    state.miners.push(makeMiner(state, c.id, c.id));
   }
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 16; i++) {
     const tier = (i + shift) % 3;
     const f = makeFleet(
       state,
       -1,
-      16 + i,
+      i < 8 ? 24 + i : 32 + i,
       ["Raider Camp", "Pirate Patrol", "Black Ledger Stronghold"][tier],
       [...BALANCE.pirates.fleets[tier]],
     );
     f.neutral = "pirates";
+    f.planet = -1;
+    f.targetPlanet = -1;
+    state.pirateCamps.push({ system: f.system, tier, nextSpawn: 0 });
     state.fleets.push(f);
-    systems[16 + i].defense = f.power;
+    systems[f.system].defense = f.power;
   }
   return state;
 }

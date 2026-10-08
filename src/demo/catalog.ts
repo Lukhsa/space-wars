@@ -91,5 +91,5 @@ export const ships = Object.fromEntries(
     { art: shipArt[i], ...BALANCE.ships[i] },
   ]),
 ) as Record<ShipClass, (typeof BALANCE.ships)[number] & { art: string }>;
-export const WORLD = { width: 3200, height: 2300 };
+export const WORLD = { width: 10000, height: 9000 };
 export const HOME = 0;

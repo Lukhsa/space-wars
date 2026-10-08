@@ -1,3 +1,4 @@
+import { majority, ownedYards, planetName } from "../demo/planets";
 import { useState } from "react";
 import { BALANCE, PHASES, STAR_NAMES, STRATEGIC } from "../demo/balance";
 import {
@@ -100,12 +101,18 @@ export function MatchHUD({
 export function SystemDetails({
   state: s,
   selected,
+  planet,
+  onPlanet,
+  onClearPirates,
 }: {
   state: DemoState;
   selected: number;
+  planet: number;
+  onPlanet: (n: number) => void;
+  onClearPirates: () => void;
 }) {
   const x = s.systems[selected],
-    estimate = strengthEstimate(s, 0, selected);
+    estimate = strengthEstimate(s, 0, selected, planet);
   const enemies = s.fleets.filter(
     (f) => f.owner !== 0 && f.system === selected && !moving(f),
   );
@@ -117,7 +124,23 @@ export function SystemDetails({
       </span>
       <div className="planet-roster">
         {x.planets.map((p, i) => (
-          <img key={i} src={asset(planets[p])} alt={`Planet ${i + 1}`} />
+          <button
+            key={i}
+            className={planet === i ? "active" : ""}
+            onClick={() => onPlanet(i)}
+            title={
+              planetName(x, i) +
+              " · " +
+              (p.owner === null ? "Unclaimed" : ownerName(s, p.owner))
+            }
+          >
+            <img src={asset(planets[p.art])} alt={`Planet ${i + 1}`} />
+            <small>
+              {i + 1}
+              {p.shipyard ? " ⚒" : ""} ·{" "}
+              {p.owner === 0 ? "YOURS" : p.owner === null ? "FREE" : "RIVAL"}
+            </small>
+          </button>
         ))}
         <small>
           {x.planets.length} worlds
@@ -125,6 +148,18 @@ export function SystemDetails({
           {x.belts} asteroid {x.belts === 1 ? "field" : "fields"}
         </small>
       </div>
+      <p>
+        System control: {x.owner === null ? "Contested" : ownerName(s, x.owner)}{" "}
+        · requires {majority(x)}/{x.planets.length} planets.
+      </p>
+      {x.planets[planet]?.shipyard && (
+        <p className="strategic-bonus">
+          SHIPYARD PLANET · local production and repairs
+        </p>
+      )}
+      {enemies.some((f) => f.neutral) && (
+        <button onClick={onClearPirates}>Attack resource-lane hostiles</button>
+      )}
       {x.strategic && (
         <div className="strategic-bonus">
           <img src={asset(`original/objective-${x.strategic}.svg`)} alt="" />
@@ -139,11 +174,17 @@ export function SystemDetails({
           Protected home system · cannot be attacked or captured.
         </p>
       )}
-      {x.capture && (
+      {x.planets[planet]?.capture && (
         <div className="capture-status">
-          Securing control · {ownerName(s, x.capture.owner)}
-          <progress max={BALANCE.captureSeconds} value={x.capture.elapsed} />
-          <small>{BALANCE.captureSeconds - x.capture.elapsed}s remaining</small>
+          Securing control · {ownerName(s, x.planets[planet].capture!.owner)}
+          <progress
+            max={BALANCE.captureSeconds}
+            value={x.planets[planet].capture!.elapsed}
+          />
+          <small>
+            {BALANCE.captureSeconds - x.planets[planet].capture!.elapsed}s
+            remaining
+          </small>
         </div>
       )}
       {!x.capital && (
@@ -197,6 +238,7 @@ export function FleetOrders({
     "Defensive",
     "Focus capitals",
     "Focus escorts",
+    "Focus defenses",
   ];
   return (
     <div className="fleet-orders">
@@ -210,7 +252,9 @@ export function FleetOrders({
           <button
             disabled={moving(f) || f.status === "Battle"}
             onClick={() =>
-              mutate((d) => launchFleet(d, f.id, f.system, "defend"))
+              mutate((d) =>
+                launchFleet(d, f.id, f.system, "defend", false, f.planet),
+              )
             }
           >
             Cancel mining
@@ -233,7 +277,11 @@ export function FleetOrders({
       </label>
       <button
         disabled={moving(f) || f.status === "Battle" || f.retreatAt !== null}
-        onClick={() => mutate((d) => launchFleet(d, f.id, f.system, "defend"))}
+        onClick={() =>
+          mutate((d) =>
+            launchFleet(d, f.id, f.system, "defend", false, f.planet),
+          )
+        }
       >
         Defend
       </button>
@@ -267,7 +315,12 @@ export function BattleTray({
       {s.battles.map((b) => (
         <button key={b.id} onClick={() => onFocus(b.system)}>
           <span className="live-dot" />
-          <strong>{s.systems[b.system].name}</strong>
+          <strong>{planetName(s.systems[b.system], b.planet)}</strong>
+          <small>
+            {s.time - b.start < BALANCE.combat.approach
+              ? "APPROACH · position your stance"
+              : "WEAPONS ENGAGED"}
+          </small>
           <small>
             {b.owners
               .map(
@@ -411,10 +464,32 @@ export function CommandFeed({
   );
 }
 export function FleetFormation({ state: s, mutate }: Props) {
-  const [counts, setCounts] = useState([0, 0, 0, 0]);
+  const [counts, setCounts] = useState([0, 0, 0, 0]),
+    [yardKey, setYardKey] = useState("0:0");
+  const yards = ownedYards(s, 0),
+    yard =
+      yards.find((y) => y.system.id + ":" + y.planet.id === yardKey) ??
+      yards[0];
   return (
     <div className="fleet-formation">
-      <span className="eyebrow">FORM A FLEET FROM RESERVE</span>
+      <span className="eyebrow">FORM A FLEET FROM LOCAL RESERVE</span>
+      <select
+        aria-label="Formation shipyard"
+        value={yard.system.id + ":" + yard.planet.id}
+        onChange={(e) => {
+          setYardKey(e.target.value);
+          setCounts([0, 0, 0, 0]);
+        }}
+      >
+        {yards.map((y) => (
+          <option
+            key={y.system.id + ":" + y.planet.id}
+            value={y.system.id + ":" + y.planet.id}
+          >
+            {planetName(y.system, y.planet.id)}
+          </option>
+        ))}
+      </select>
       <div>
         {shipClasses.map((kind, i) => (
           <label key={kind}>
@@ -423,7 +498,7 @@ export function FleetFormation({ state: s, mutate }: Props) {
               aria-label={`${kind} allocation`}
               type="number"
               min="0"
-              max={s.reserve[i]}
+              max={yard.planet.reserve[i]}
               value={counts[i]}
               onChange={(e) =>
                 setCounts(
@@ -431,7 +506,7 @@ export function FleetFormation({ state: s, mutate }: Props) {
                 )
               }
             />
-            <small>{s.reserve[i]} available</small>
+            <small>{yard.planet.reserve[i]} available</small>
           </label>
         ))}
       </div>
@@ -440,8 +515,8 @@ export function FleetFormation({ state: s, mutate }: Props) {
         onClick={() => {
           if (
             mutate(
-              (d) => createFleet(d, 0, counts),
-              "Fleet commissioned at Nova Prime.",
+              (d) => createFleet(d, 0, counts, yard.system.id, yard.planet.id),
+              "Fleet commissioned at the selected shipyard.",
             )
           )
             setCounts([0, 0, 0, 0]);

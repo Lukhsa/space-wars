@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { BALANCE } from "../demo/balance";
 import { asset } from "../demo/catalog";
 import {
@@ -17,16 +16,20 @@ import type { Mutate } from "./QuickConquest";
 export function PlanetaryDefenses({
   state: s,
   selected,
+  planet,
+  onPlanet,
   mutate,
 }: {
   state: DemoState;
   selected: number;
+  planet: number;
+  onPlanet: (n: number) => void;
   mutate: Mutate;
 }) {
-  const [planet, setPlanet] = useState(0),
-    x = s.systems[selected];
-  const own = x.owner === 0,
-    blocked = contested(s, x),
+  const x = s.systems[selected];
+  if (planet < 0) return null;
+  const own = x.planets[planet]?.owner === 0,
+    blocked = contested(s, x, planet),
     busy = x.installations.some((d) => d.job);
   if (!own && !s.devReveal && !visibleSystems(s, 0).has(selected)) return null;
   return (
@@ -37,7 +40,7 @@ export function PlanetaryDefenses({
         <select
           aria-label="Defense planet"
           value={planet}
-          onChange={(e) => setPlanet(Number(e.target.value))}
+          onChange={(e) => onPlanet(Number(e.target.value))}
         >
           {x.planets.map((_, i) => (
             <option key={i} value={i}>

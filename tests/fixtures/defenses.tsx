@@ -13,7 +13,13 @@ s.commanders.forEach((c) => {
   c.bot = false;
 });
 const mode = new URLSearchParams(location.search).get("mode");
+if (mode === "orders") {
+  s.fleets.push(makeFleet(s, 0, 0, "Second Expeditionary", [3, 1, 0, 0]));
+  s.systems[24].planets[0].owner = 0;
+  s.systems[24].planets[0].reserve = [2, 0, 0, 0];
+}
 s.systems[8].owner = mode === "siege" ? 1 : 0;
+s.systems[8].planets.forEach((p) => (p.owner = s.systems[8].owner));
 s.resources.credits = s.resources.alloy = 12000;
 if (mode === "mine") s.resources.alloy = 0;
 if (mode === "bots") {
@@ -23,6 +29,7 @@ if (mode === "bots") {
   s.resources.credits = 1800;
   s.resources.alloy = 1100;
   s.systems[8].owner = null;
+  s.systems[8].planets.forEach((p) => (p.owner = null));
   while (
     s.time < 900 &&
     !s.systems.some(
@@ -35,6 +42,15 @@ if (mode === "bots") {
   );
   if (!target) throw Error("No bot construction in fixture");
   document.documentElement.dataset.botSystem = target.name;
+  document.documentElement.dataset.botPlanet = String(
+    target.installations.find((d) => d.job)!.planet,
+  );
+  // Isolate completion of the bot's paid construction order from subsequent wars.
+  s.commanders.forEach((c) => (c.bot = false));
+  s.fleets = s.fleets.filter(
+    (f) =>
+      f.system !== target.id || f.owner === target.planets[f.planet]?.owner,
+  );
   s.devReveal = true;
 }
 if (mode === "repair" || mode === "siege" || mode === "defend") {

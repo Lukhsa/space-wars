@@ -9,11 +9,12 @@ import {
   hasBonus,
   log,
   moving,
-  miningYield,
   refreshFleet,
   standings,
   syncPlayer,
 } from "./model";
+import { ownedPlanets, ownedYards, updateControl, planetName } from "./planets";
+import { miningTick } from "./mining";
 import { objectiveTick } from "./objectives";
 import { shipClasses } from "./catalog";
 import type { DemoState, Fleet } from "./types";
@@ -60,30 +61,13 @@ function movementTick(s: DemoState, f: Fleet) {
     s.commanders[f.owner].intel[f.system] = s.time + BALANCE.scoutingSeconds;
     if (f.owner === 0) x.scouted = true;
   }
-  const hostile = s.fleets.some(
-    (other) =>
-      other.id !== f.id &&
-      other.system === f.system &&
-      other.owner !== f.owner &&
-      !moving(other),
-  );
-  // Hostile fleets intercept at intermediate systems. Lanes cannot skip battles.
-  if (
-    (hostile || (x.owner !== f.owner && activeDefenses(x).length)) &&
-    !x.capital
-  )
-    f.route = [];
+  f.planet = f.route.length > 1 ? -1 : f.targetPlanet;
   if (f.route.length > 1) {
     f.duration = travelTime(s, f.route.slice(0, 2), f);
     return;
   }
   f.route = [];
-  f.status =
-    f.mission === "mine" && x.asteroid
-      ? "Mining"
-      : x.owner === f.owner
-        ? "Defending"
-        : "Idle";
+  f.status = x.planets[f.planet]?.owner === f.owner ? "Defending" : "Idle";
   log(
     s,
     f.mission === "scout" ? "scout" : "fleet",
@@ -118,18 +102,18 @@ function economyTick(s: DemoState) {
       );
     }
     const recovering = c.recoveryUntil > s.time;
-    for (const x of owned) {
+    for (const { system: x } of ownedPlanets(s, c.id)) {
       const multiplier =
         x.capital && recovering ? 1 + BALANCE.recovery.income : 1;
       c.resources.credits +=
-        (x.output[0] / 60) *
+        (x.output[0] / x.planets.length / 60) *
         multiplier *
         (hasBonus(s, c.id, "trade") ? 1 + BALANCE.buffs.trade : 1);
       c.resources.alloy +=
-        (x.output[1] / 60) *
+        (x.output[1] / x.planets.length / 60) *
         multiplier *
         (hasBonus(s, c.id, "titanium") ? 1 + BALANCE.buffs.titanium : 1);
-      c.resources.fuel += (x.output[2] / 60) * multiplier;
+      c.resources.fuel += (x.output[2] / x.planets.length / 60) * multiplier;
       if (!x.capital) {
         const rate =
           x.region === "Core"
@@ -138,7 +122,7 @@ function economyTick(s: DemoState) {
               ? BALANCE.score.strategic
               : BALANCE.score.normal;
         c.score +=
-          (rate / 60) *
+          (rate / x.planets.length / 60) *
           (x.region === "Core" && s.time / s.duration >= BALANCE.phases[4]
             ? BALANCE.score.endgameMultiplier
             : 1);
@@ -147,77 +131,114 @@ function economyTick(s: DemoState) {
     const forge = hasBonus(s, c.id, "forge") ? BALANCE.buffs.forge : 0;
     for (const key of ["credits", "alloy", "fuel"] as const)
       c.telemetry.passive[key] += c.resources[key] - before[key];
-    for (const job of c.queue.slice(0, BALANCE.berths)) {
-      job.elapsed +=
-        1 +
-        forge +
-        (recovering && ["Frigate", "Destroyer"].includes(job.kind)
-          ? BALANCE.recovery.build
-          : 0);
-      if (job.elapsed >= job.duration) {
-        c.reserve[shipClasses.indexOf(job.kind)]++;
-        c.stats.built++;
-        c.telemetry.builtClasses[shipClasses.indexOf(job.kind)]++;
-        log(
-          s,
-          "build",
-          "Ship construction complete",
-          `${job.kind} ready at ${s.systems[c.id].name}.`,
-          c.id,
-          c.id === 0,
-        );
+    for (const { system, planet } of ownedYards(s, c.id)) {
+      if (
+        s.fleets.some(
+          (f) =>
+            f.system === system.id &&
+            f.planet === planet.id &&
+            f.owner !== c.id &&
+            !moving(f),
+        )
+      )
+        continue;
+      for (const job of planet.queue.slice(0, BALANCE.berths)) {
+        job.elapsed +=
+          1 +
+          forge +
+          (recovering && ["Frigate", "Destroyer"].includes(job.kind)
+            ? BALANCE.recovery.build
+            : 0);
+        if (job.elapsed >= job.duration) {
+          planet.reserve[shipClasses.indexOf(job.kind)]++;
+          c.stats.built++;
+          c.telemetry.builtClasses[shipClasses.indexOf(job.kind)]++;
+          log(
+            s,
+            "build",
+            "Ship construction complete",
+            `${job.kind} ready at ${planetName(system, planet.id)}.`,
+            c.id,
+            c.id === 0,
+          );
+        }
       }
+      planet.queue = planet.queue.filter((j) => j.elapsed < j.duration);
     }
-    c.queue = c.queue.filter((j) => j.elapsed < j.duration);
     c.buffs = c.buffs.filter((b) => b.until > s.time);
   }
 }
 function territoryTick(s: DemoState) {
   for (const x of s.systems) {
-    const present = s.fleets.filter((f) => f.system === x.id && !moving(f));
-    x.defense = present
-      .filter((f) => f.owner !== 0)
-      .reduce((n, f) => n + f.power, x.owner !== 0 ? defensePower(x) : 0);
-    x.scouted = x.owner === 0 || (s.commanders[0].intel[x.id] ?? 0) > s.time;
-    const owners = [...new Set(present.map((f) => f.owner))];
-    const owner = owners[0];
-    if (
-      x.capital ||
-      owners.length !== 1 ||
-      owner < 0 ||
-      owner === undefined ||
-      x.owner === owner ||
-      activeDefenses(x).length > 0 ||
-      present.every((f) => f.mission === "scout" || f.retreatAt !== null)
-    ) {
-      x.capture = null;
-      continue;
+    x.defense = s.fleets
+      .filter((f) => f.system === x.id && f.owner !== 0 && !moving(f))
+      .reduce((n, f) => n + f.power, defensePower(x));
+    x.scouted =
+      x.planets.some((p) => p.owner === 0) ||
+      (s.commanders[0].intel[x.id] ?? 0) > s.time;
+    for (const p of x.planets) {
+      const present = s.fleets.filter(
+        (f) => f.system === x.id && f.planet === p.id && !moving(f),
+      );
+      const owners = [...new Set(present.map((f) => f.owner))],
+        owner = owners[0];
+      if (
+        x.capital ||
+        owners.length !== 1 ||
+        owner === undefined ||
+        owner < 0 ||
+        p.owner === owner ||
+        activeDefenses(x, p.id).length ||
+        present.every((f) => f.mission === "scout" || f.retreatAt !== null)
+      ) {
+        p.capture = null;
+        continue;
+      }
+      if (p.capture?.owner !== owner) p.capture = { owner, elapsed: 0 };
+      p.capture.elapsed++;
+      for (const f of present) if (f.retreatAt === null) f.status = "Capturing";
+      if (p.capture.elapsed >= BALANCE.captureSeconds) {
+        const old = p.owner;
+        x.installations = x.installations.filter((d) => d.planet !== p.id);
+        p.owner = owner;
+        p.capture = null;
+        p.capturedAt = s.time;
+        p.queue = [];
+        p.reserve = [0, 0, 0, 0];
+        if (old !== null) s.commanders[owner].telemetry.ownershipFlips++;
+        s.commanders[owner].stats.captures++;
+        for (const f of present)
+          if (f.retreatAt === null) f.status = "Defending";
+        log(
+          s,
+          "world",
+          "Planet captured",
+          s.commanders[owner].name +
+            " controls " +
+            planetName(x, p.id) +
+            (p.shipyard ? " and its shipyard." : "."),
+          x.id,
+          owner === 0 || old === 0,
+          old === 0,
+        );
+      }
     }
-    if (!x.capture || x.capture.owner !== owner)
-      x.capture = { owner, elapsed: 0 };
-    x.capture.elapsed++;
-    for (const f of present) if (f.retreatAt === null) f.status = "Capturing";
-    if (x.capture.elapsed >= BALANCE.captureSeconds) {
-      const old = x.owner;
-      x.installations = []; // Ruins and unfinished jobs yield no salvage or inherited structures.
-      if (old !== null) s.commanders[owner].telemetry.ownershipFlips++;
-      x.owner = owner;
+    const old = x.owner;
+    updateControl(x);
+    if (old !== x.owner) {
       x.capturedAt = s.time;
-      x.capture = null;
-      s.commanders[owner].stats.captures++;
-      for (const f of present)
-        if (f.retreatAt === null)
-          f.status = f.mission === "mine" ? "Mining" : "Defending";
       log(
         s,
         "world",
-        x.strategic ? "Strategic system captured" : "System captured",
-        `${s.commanders[owner].name} controls ${x.name}${old !== null ? ` — taken from ${s.commanders[old].name}` : ""}.`,
+        "System control changed",
+        x.name +
+          " strict majority: " +
+          (x.owner === null ? "contested" : s.commanders[x.owner].name),
         x.id,
-        owner === 0 || old === 0,
-        old === 0,
+        old === 0 || x.owner === 0,
       );
     }
+    x.capture = x.planets.find((p) => p.capture)?.capture ?? null;
   }
 }
 function activityTick(s: DemoState) {
@@ -229,54 +250,14 @@ function activityTick(s: DemoState) {
       f.retreatAt !== null
     )
       continue;
-    const c = s.commanders[f.owner],
-      x = s.systems[f.system];
-    if (f.mission === "mine" && (x.owner !== f.owner || !x.asteroid)) {
-      f.repeatMining = false;
-      f.miningElapsed = 0;
-      f.mission = "defend";
-      f.status = "Idle";
-    }
-    if (f.system === f.owner) {
+    const p = s.systems[f.system].planets[f.planet];
+    if (p?.shipyard && p.owner === f.owner) {
       for (const u of f.units)
         u.hp = Math.min(
           BALANCE.ships[u.kind].hull,
           u.hp + BALANCE.ships[u.kind].hull * BALANCE.repairPerSecond,
         );
       refreshFleet(f);
-    }
-    if (f.status === "Mining" && x.owner === f.owner && x.asteroid) {
-      // One extraction operation per system, even if a malformed save bypasses commands.
-      if (
-        s.fleets.some(
-          (other) =>
-            other.id < f.id &&
-            other.system === x.id &&
-            other.owner === f.owner &&
-            other.status === "Mining",
-        )
-      )
-        continue;
-      c.telemetry.miningSeconds++;
-      f.miningElapsed++;
-      if (f.miningElapsed >= BALANCE.miningSeconds) {
-        const alloy = miningYield(s, f.owner, x);
-        c.resources.alloy += alloy;
-        c.resources.fuel += BALANCE.miningFuel;
-        c.stats.mined += alloy + BALANCE.miningFuel;
-        c.telemetry.minedAlloy += alloy;
-        f.miningElapsed = 0;
-        f.status = f.repeatMining ? "Mining" : "Idle";
-        if (!f.repeatMining) f.mission = "defend";
-        log(
-          s,
-          "mining",
-          "Mining complete",
-          `${f.name}: +${alloy} Alloy / +${BALANCE.miningFuel} Fuel.`,
-          x.id,
-          f.owner === 0,
-        );
-      }
     }
   }
 }
@@ -343,6 +324,7 @@ export function stepMatch(s: DemoState) {
   defenseTick(s);
   territoryTick(s);
   activityTick(s);
+  miningTick(s);
   botTick(s);
   victoryTick(s);
   if (s.time % 30 === 0 || s.winner !== null)
