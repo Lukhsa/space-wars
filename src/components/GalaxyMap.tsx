@@ -981,7 +981,7 @@ export default function GalaxyMap({
                   }}
                 >
                   <circle r="20" fill="transparent" />
-                  <circle className="object-highlight" r="20" />
+                  <circle className="object-highlight" r="13" />
                   <image
                     href={asset(
                       m.owner === 0
@@ -991,10 +991,10 @@ export default function GalaxyMap({
                             0,
                           ),
                     )}
-                    x="-18"
-                    y="-18"
-                    width="36"
-                    height="36"
+                    x="-9"
+                    y="-9"
+                    width="18"
+                    height="18"
                   />
                   <text y="22" textAnchor="middle" fontSize="9" fill="#dfc88f">
                     MINER {m.berth + 1} · {m.status.toUpperCase()}

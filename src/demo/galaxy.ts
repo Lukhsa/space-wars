@@ -191,10 +191,10 @@ export function generateGalaxy(
         s.belts = 1;
       }
       seedPlanetOutput(s);
-      seedDeposits(s, seed);
       return s;
     },
   );
+  for (const system of systems) seedDeposits(system, seed, systems);
   const bonus: Strategic[] = [
     "forge",
     "relay",

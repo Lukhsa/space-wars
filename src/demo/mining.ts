@@ -3,44 +3,80 @@ import { randomFrom } from "./random";
 import { log, moving } from "./model";
 import { planetOffset, planetPosition } from "./planets";
 import type { DemoState, Miner, System } from "./types";
-export function spawnDeposit(system: System, seed: string, time: number) {
+export function spawnDeposit(
+  system: System,
+  seed: string,
+  time: number,
+  systems: readonly System[] = [system],
+) {
   if (system.deposits.length >= BALANCE.mining.maximumDeposits) return;
   const random = randomFrom(`${seed}:deposit:${system.id}:${time}`);
   const slot = Array.from({ length: 24 }, (_, i) => i).find(
-    (slot) =>
-      !system.deposits.some((d) => d.slot === slot) &&
-      (() => {
-        const angle = (slot * Math.PI * 2) / 12,
-          radius = slot < 12 ? 100 : 245;
-        return system.planets.every((p) => {
-          const q = planetOffset(system, p.id);
-          return (
-            Math.hypot(
-              q.x - Math.cos(angle) * radius,
-              q.y - Math.sin(angle) * radius,
-            ) > 50
-          );
-        });
-      })(),
+    (slot) => !system.deposits.some((d) => d.slot === slot),
   );
   if (slot === undefined) return;
-  const angle = (slot * Math.PI * 2) / 12,
-    radius = slot < 12 ? 100 : 245;
+  const placement = randomFrom(`${seed}:deposit-position:${system.id}:${time}`);
+  const neighbors = systems.filter(
+    (x) => Math.hypot(x.x - system.x, x.y - system.y) < 550,
+  );
+  const sectorWidth = (Math.PI * 2) / 6;
+  const counts = Array.from({ length: 6 }, () => 0);
+  for (const d of system.deposits) {
+    const angle = (Math.atan2(d.y, d.x) + Math.PI * 2) % (Math.PI * 2);
+    counts[Math.floor(angle / sectorWidth)]++;
+  }
+  // Fill sparse directions, varying both angle and distance instead of using a ring.
+  const sectors = counts
+    .map((count, sector) => ({ count, sector, tie: placement() }))
+    .sort((a, b) => a.count - b.count || a.tie - b.tie);
+  let position: { x: number; y: number } | undefined;
+  for (const { sector } of sectors) {
+    for (let attempt = 0; attempt < 32; attempt++) {
+      const angle = (sector + placement()) * sectorWidth;
+      const radius = Math.sqrt(95 ** 2 + placement() * (245 ** 2 - 95 ** 2));
+      const candidate = {
+        x: Math.cos(angle) * radius,
+        y: Math.sin(angle) * radius,
+      };
+      if (
+        neighbors.every((x) => {
+          const dx = system.x + candidate.x - x.x,
+            dy = system.y + candidate.y - x.y;
+          return (
+            Math.hypot(dx, dy) > 90 &&
+            x.planets.every((p) => {
+              const q = planetOffset(x, p.id);
+              return Math.hypot(q.x - dx, q.y - dy) > 50;
+            }) &&
+            x.deposits.every((d) => Math.hypot(d.x - dx, d.y - dy) > 38)
+          );
+        })
+      ) {
+        position = candidate;
+        break;
+      }
+    }
+    if (position) break;
+  }
+  if (!position) return;
   const richness = Math.round(system.richness * (0.9 + random() * 0.2));
   system.deposits.push({
     id: system.id * 100000 + time * 10 + slot,
     slot,
-    x: Math.cos(angle) * radius,
-    y: Math.sin(angle) * radius,
+    ...position,
     richness,
     reserves: richness * BALANCE.mining.reservesCycles,
   });
   system.belts = system.deposits.length;
   system.asteroid = true;
 }
-export function seedDeposits(system: System, seed: string) {
+export function seedDeposits(
+  system: System,
+  seed: string,
+  systems: readonly System[] = [system],
+) {
   const count = system.capital ? 6 : 6 + (system.id % 2);
-  for (let i = 0; i < count; i++) spawnDeposit(system, seed, i);
+  for (let i = 0; i < count; i++) spawnDeposit(system, seed, i, systems);
   system.nextDeposit = 70 + (system.id % 40);
 }
 export const makeMiner = (
@@ -167,7 +203,7 @@ export function minerPosition(s: DemoState, m: Miner) {
 export function miningTick(s: DemoState) {
   for (const x of s.systems)
     if (s.time >= x.nextDeposit) {
-      spawnDeposit(x, s.seed, s.time);
+      spawnDeposit(x, s.seed, s.time, s.systems);
       const r = randomFrom(`${s.seed}:replenish:${x.id}:${s.time}`);
       x.nextDeposit =
         s.time +
