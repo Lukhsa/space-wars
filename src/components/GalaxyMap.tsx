@@ -13,8 +13,8 @@ import {
   asset,
   civilizations,
   planets,
-  ships,
-  shipClasses,
+  shipArtwork,
+  MINER_ART,
   WORLD,
 } from "../demo/catalog";
 import { BALANCE } from "../demo/balance";
@@ -32,6 +32,10 @@ interface Props {
   selectedAsteroid: boolean;
   selectedFleet: number | null;
   selectedPlanet: number;
+  selectionKind: "planet" | "fleet" | "deposit" | "miner";
+  selectedDeposit: number | null;
+  selectedMiner: number | null;
+  onMiner: (id: number) => void;
   selectedFleetIds: number[];
   onPlanet: (system: number, planet: number) => void;
   onDeposit: (system: number, deposit: number) => void;
@@ -49,6 +53,10 @@ export default function GalaxyMap({
   selectedAsteroid,
   selectedFleet,
   selectedPlanet,
+  selectionKind,
+  selectedDeposit,
+  selectedMiner,
+  onMiner,
   selectedFleetIds,
   onPlanet,
   onDeposit,
@@ -333,34 +341,7 @@ export default function GalaxyMap({
                   const { orbit, x: px, y: py } = planet;
                   const diameter = planet.diameter;
                   return (
-                    <g
-                      key={i}
-                      className="orbital-planet"
-                      role="button"
-                      tabIndex={0}
-                      aria-label={
-                        planetName(s, i) +
-                        ", " +
-                        (s.planets[i].owner === 0
-                          ? "owned"
-                          : s.planets[i].owner === null
-                            ? "neutral"
-                            : "rival") +
-                        " planet"
-                      }
-                      data-planet={i}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!drag.current.moved) onPlanet(s.id, i);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onPlanet(s.id, i);
-                        }
-                      }}
-                    >
+                    <g key={i}>
                       <ellipse
                         pointerEvents="none"
                         rx={orbit}
@@ -370,37 +351,73 @@ export default function GalaxyMap({
                         strokeOpacity={active || hovered ? ".18" : ".055"}
                         strokeWidth=".7"
                       />
-                      <circle
-                        cx={px}
-                        cy={py}
-                        r={diameter / 2 + 7}
-                        fill="transparent"
-                        stroke={color(s.planets[i].owner)}
-                        strokeWidth={active && selectedPlanet === i ? 2.5 : 1}
-                        strokeDasharray={
-                          active && selectedPlanet === i ? "4 3" : undefined
+                      <g
+                        className="orbital-planet map-object"
+                        aria-pressed={
+                          selectionKind === "planet" &&
+                          active &&
+                          selectedPlanet === i
                         }
-                      />
-                      {detail === "close" && (
-                        <text
-                          x={px}
-                          y={py - diameter / 2 - 10}
-                          textAnchor="middle"
-                          fontSize="10"
-                          fill={color(s.planets[i].owner)}
-                        >
-                          {["I", "II", "III", "IV", "V"][i]}
-                          {s.planets[i].shipyard ? " · YARD" : ""}
-                        </text>
-                      )}
-                      <image
-                        href={asset(planets[planet.kind])}
-                        x={px - diameter / 2}
-                        y={py - diameter / 2}
-                        width={diameter}
-                        height={diameter}
-                        className="planet-texture"
-                      />
+                        role="button"
+                        tabIndex={0}
+                        aria-label={
+                          planetName(s, i) +
+                          ", " +
+                          (s.planets[i].owner === 0
+                            ? "owned"
+                            : s.planets[i].owner === null
+                              ? "neutral"
+                              : "rival") +
+                          " planet"
+                        }
+                        data-planet={i}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!drag.current.moved) onPlanet(s.id, i);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onPlanet(s.id, i);
+                          }
+                        }}
+                      >
+                        <circle
+                          cx={px}
+                          cy={py}
+                          r={diameter / 2 + 7}
+                          fill="transparent"
+                          stroke={color(s.planets[i].owner)}
+                          strokeWidth={1}
+                        />
+                        <circle
+                          className="object-highlight"
+                          cx={px}
+                          cy={py}
+                          r={diameter / 2 + 7}
+                        />
+                        {detail === "close" && (
+                          <text
+                            x={px}
+                            y={py - diameter / 2 - 10}
+                            textAnchor="middle"
+                            fontSize="10"
+                            fill={color(s.planets[i].owner)}
+                          >
+                            {["I", "II", "III", "IV", "V"][i]}
+                            {s.planets[i].shipyard ? " · YARD" : ""}
+                          </text>
+                        )}
+                        <image
+                          href={asset(planets[planet.kind])}
+                          x={px - diameter / 2}
+                          y={py - diameter / 2}
+                          width={diameter}
+                          height={diameter}
+                          className="planet-texture"
+                        />
+                      </g>
                     </g>
                   );
                 })}
@@ -464,6 +481,7 @@ export default function GalaxyMap({
       owners,
       planetKey,
       selectedPlanet,
+      selectionKind,
       onPlanet,
       selected,
       hover,
@@ -816,11 +834,17 @@ export default function GalaxyMap({
                 Math.abs(field.y - camera.y) > size.height / camera.z / 2 + 30
               )
                 return null;
-              const active = selectedAsteroid && selected === x.id;
+              const active =
+                selectionKind === "deposit" &&
+                selectedAsteroid &&
+                selected === x.id &&
+                field.deposit === (selectedDeposit ?? x.deposits[0]?.id);
               return (
                 <g
                   key={field.deposit}
-                  className="asteroid-field"
+                  className="asteroid-field map-object"
+                  aria-pressed={active}
+                  data-deposit={field.deposit}
                   data-asteroid-system={x.id}
                   transform={`translate(${field.x} ${field.y})`}
                   role="button"
@@ -850,14 +874,7 @@ export default function GalaxyMap({
                     width="18"
                     height="18"
                   />
-                  {active && (
-                    <circle
-                      r="12"
-                      fill="none"
-                      stroke="#c7ae76"
-                      strokeWidth=".7"
-                    />
-                  )}
+                  <circle className="object-highlight" r="14" />
                 </g>
               );
             })}
@@ -952,28 +969,39 @@ export default function GalaxyMap({
                   transform={`translate(${base.x + (end.x - base.x) * t} ${base.y + (end.y - base.y) * t + 25})`}
                   role="button"
                   tabIndex={0}
+                  className="miner-marker map-object"
+                  aria-pressed={
+                    selectionKind === "miner" && selectedMiner === m.id
+                  }
+                  data-miner={m.id}
                   aria-label={x.name + " civilian miner"}
-                  onClick={() => onSelect(x.id, true)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!drag.current.moved) onMiner(m.id);
+                  }}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") onSelect(x.id, true);
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onMiner(m.id);
+                    }
                   }}
                 >
-                  <rect
-                    x="-8"
-                    y="-5"
-                    width="16"
-                    height="10"
-                    rx="3"
-                    fill="#95bab3"
-                    stroke="#f4dd9c"
-                  />
-                  <rect
-                    x="-4"
-                    y="-8"
-                    width="8"
-                    height="16"
-                    rx="2"
-                    fill="#435a69"
+                  <circle r="20" fill="transparent" />
+                  <circle className="object-highlight" r="20" />
+                  <image
+                    href={asset(
+                      m.owner === 0
+                        ? MINER_ART
+                        : shipArtwork(
+                            state.commanders[m.owner].civilization,
+                            0,
+                          ),
+                    )}
+                    x="-18"
+                    y="-18"
+                    width="36"
+                    height="36"
                   />
                   <text y="22" textAnchor="middle" fontSize="9" fill="#dfc88f">
                     MINER · {m.status.toUpperCase()}
@@ -990,7 +1018,10 @@ export default function GalaxyMap({
             )
               return null;
             const p = fleetPosition(state, f),
-              selectedF = selectedFleetIds.includes(f.id),
+              selectedF =
+                selectionKind === "fleet" &&
+                (selectedFleetIds.includes(f.id) ||
+                  (f.owner !== 0 && selectedFleet === f.id)),
               isMoving = moving(f),
               strongest = Math.max(...f.units.map((u) => u.kind)),
               diameter = 24 + strongest * 4;
@@ -1000,7 +1031,10 @@ export default function GalaxyMap({
                 role="button"
                 tabIndex={0}
                 aria-label={`${f.name} fleet`}
-                className={`fleet-marker ${selectedF ? "active" : ""}`}
+                className={`fleet-marker map-object ${selectedF ? "active" : ""}`}
+                aria-pressed={selectedF}
+                data-fleet={f.id}
+                data-owner={f.owner}
                 style={{
                   transform: `translate(${p.x}px, ${p.y}px)`,
                   transition: paused ? "none" : "transform 210ms linear",
@@ -1018,15 +1052,7 @@ export default function GalaxyMap({
                 }}
               >
                 <circle r="16" fill="transparent" />
-                {selectedF && (
-                  <circle
-                    r="16"
-                    fill="none"
-                    stroke="#a5d9e1"
-                    strokeOpacity=".8"
-                    strokeWidth="1"
-                  />
-                )}
+                <circle className="object-highlight" r={diameter / 2 + 4} />
                 {isMoving && (
                   <path
                     d={`M-5 0h-22`}
@@ -1042,7 +1068,10 @@ export default function GalaxyMap({
                       ? f.neutral === "pirates"
                         ? "war2_pirate_ragtooth.webp"
                         : "original/" + f.neutral + ".svg"
-                      : ships[shipClasses[strongest]].art,
+                      : shipArtwork(
+                          state.commanders[f.owner].civilization,
+                          strongest,
+                        ),
                   )}
                   x={-diameter / 2}
                   y={-diameter / 2}

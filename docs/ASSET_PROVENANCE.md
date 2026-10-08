@@ -53,7 +53,7 @@ Current source authority: `src/data/catalogs/civilizations.json`, `species.json`
 
 The candidate name **Winter Collective** was not found in the current civilization/species catalogs. Glin'Tok and Myrmex are the additional supported identities used here; neither is presented as an alias for Winter Collective.
 
-The generic prototype Destroyer uses `war2_engine_burner_overburn_destroyer.webp` temporarily. Frigate, Cruiser and Dreadnought use Human hulls. This is an art stand-in, not a lore or balance change. The Human emblem/favicon, starfield, nebula gradients, territory geometry and map overlays were authored in Space Wars. UI glyphs come from the `lucide-react` dependency, not copied reference files.
+Human fleets and production now use Human hulls throughout; the Destroyer reuses the Human frigate silhouette because the reference catalog has no Human destroyer. Rival fleets use their civilization's artwork. Additional copied hulls and their hashes are recorded in the manifest; mapping details and the generated Human mining sprite are documented in [Ship art and selection](SHIP_ART_SELECTION.md). The Human emblem/favicon, starfield, nebula gradients, territory geometry and map overlays were authored in Space Wars. UI glyphs come from the `lucide-react` dependency, not copied reference files.
 
 No assets were copied from Space Explorer RPG Backend.
 

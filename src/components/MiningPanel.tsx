@@ -1,3 +1,4 @@
+import { asset, MINER_ART } from "../demo/catalog";
 import { BALANCE } from "../demo/balance";
 import { commissionMiner, orderMiner, recallMiner } from "../demo/mining";
 import type { DemoState } from "../demo/types";
@@ -22,6 +23,11 @@ export function MiningPanel({
   return (
     <section className="planetary-defenses" aria-label="Civilian mining">
       <span className="eyebrow">CIVILIAN MINING · ONE CRAFT PER SYSTEM</span>
+      <img
+        className="mining-craft-portrait"
+        src={asset(MINER_ART)}
+        alt="Human civilian mining craft"
+      />
       <p>
         {x.deposits.length} deposits ·{" "}
         {d

@@ -81,7 +81,7 @@ export const shipClasses: ShipClass[] = [
 ];
 const shipArt = [
   "war2_human_frigate.webp",
-  "war2_engine_burner_overburn_destroyer.webp",
+  "war2_human_frigate.webp",
   "war2_human_cruiser.webp",
   "war2_human_dreadnought.webp",
 ];
@@ -93,3 +93,59 @@ export const ships = Object.fromEntries(
 ) as Record<ShipClass, (typeof BALANCE.ships)[number] & { art: string }>;
 export const WORLD = { width: 10000, height: 9000 };
 export const HOME = 0;
+
+// Class art is resolved by civilization; missing classes reuse that civilization's hull.
+export const factionShipArt: readonly (readonly string[])[] = [
+  [
+    "war2_human_frigate.webp",
+    "war2_human_frigate.webp",
+    "war2_human_cruiser.webp",
+    "war2_human_dreadnought.webp",
+  ],
+  [
+    "war2_engine_burner_redline_frigate.webp",
+    "war2_engine_burner_overburn_destroyer.webp",
+    "war2_engine_burner_overburn_destroyer.webp",
+    "war2_engine_burner_overburn_destroyer.webp",
+  ],
+  [
+    "war2_kragg_gnasher_raider.webp",
+    "war2_kragg_rockjaw_gunship.webp",
+    "war2_kragg_ravager.webp",
+    "war2_kragg_war_chief.webp",
+  ],
+  [
+    "war2_zetari_dissection_frigate.webp",
+    "war2_zetari_dissection_frigate.webp",
+    "war2_zetari_specimen_cruiser.webp",
+    "war2_zetari_containment_dreadnought.webp",
+  ],
+  [
+    "war2_skin_warship_frigate_solar_forge.webp",
+    "war2_skin_warship_frigate_solar_forge.webp",
+    "war2_skin_warship_cruiser_solar_forge.webp",
+    "war2_skin_warship_dreadnought_solar_forge.webp",
+  ],
+  [
+    "war2_aether_loom_frigate.webp",
+    "war2_aether_loom_frigate.webp",
+    "war2_aether_loom_frigate.webp",
+    "war2_aether_atlas_dreadnought.webp",
+  ],
+  [
+    "war2_glint_fine_print_escort.webp",
+    "war2_glint_fine_print_escort.webp",
+    "war2_glint_liquid_assets_barge.webp",
+    "war2_glint_compound_interest_dreadnought.webp",
+  ],
+  [
+    "war2_myrmex_convoy_frigate.webp",
+    "war2_myrmex_convoy_frigate.webp",
+    "war2_myrmex_convoy_frigate.webp",
+    "war2_myrmex_foundry_dreadnought.webp",
+  ],
+];
+export const shipArtwork = (civilization: number, kind: number) =>
+  (factionShipArt[civilization] ?? factionShipArt[0])[kind] ??
+  factionShipArt[0][0];
+export const MINER_ART = "human_mining_craft_01.png";

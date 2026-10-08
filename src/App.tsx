@@ -1,3 +1,4 @@
+import { shipArtwork } from "./demo/catalog";
 import { MiningPanel } from "./components/MiningPanel";
 import { ownedYards, planetName } from "./demo/planets";
 import { orderFleets } from "./demo/commands";
@@ -227,6 +228,10 @@ export default function App({
   const [state, setState] = useState(
     () => initialState ?? generateGalaxy("ORION-7742"),
   );
+  const [selectionKind, setSelectionKind] = useState<
+      "planet" | "fleet" | "deposit" | "miner"
+    >("planet"),
+    [selectedMiner, setSelectedMiner] = useState<number | null>(null);
   const [selectedPlanet, setSelectedPlanet] = useState(0),
     [selectedDeposit, setSelectedDeposit] = useState<number | null>(null),
     [selectedFleetIds, setSelectedFleetIds] = useState<number[]>([]),
@@ -326,6 +331,8 @@ export default function App({
       : [];
   const ownedCount = state.systems.filter((s) => s.owner === 0).length;
   const inspect = useCallback((id: number, belt = false) => {
+    setSelectionKind(belt ? "deposit" : "planet");
+    setSelectedMiner(null);
     setSelected(id);
     setSelectedPlanet(0);
     setSelectedDeposit(null);
@@ -349,6 +356,7 @@ export default function App({
       );
     else setSelectedFleetIds([]);
     inspect(moving(fleet) ? fleet.route.at(-1)! : fleet.system);
+    setSelectionKind("fleet");
     setFocus((f) => ({
       id: fleet.system,
       nonce: f.nonce + 1,
@@ -408,6 +416,8 @@ export default function App({
     return () => window.removeEventListener("keydown", clear);
   }, []);
   const reset = (seed: string) => {
+    setSelectionKind("planet");
+    setSelectedMiner(null);
     setSelectedPlanet(0);
     setSelectedFleetIds([]);
     setSelectedDeposit(null);
@@ -860,6 +870,7 @@ export default function App({
               selected={selected}
               planet={selectedPlanet}
               onPlanet={(p) => {
+                setSelectionKind("planet");
                 setSelectedPlanet(p);
                 setAsteroid(false);
               }}
@@ -880,7 +891,10 @@ export default function App({
               <PlanetaryDefenses
                 key={selected + ":" + selectedPlanet}
                 planet={selectedPlanet}
-                onPlanet={setSelectedPlanet}
+                onPlanet={(p) => {
+                  setSelectionKind("planet");
+                  setSelectedPlanet(p);
+                }}
                 state={state}
                 selected={selected}
                 mutate={mutate}
@@ -1000,11 +1014,23 @@ export default function App({
             selectedAsteroid={asteroid}
             selectedFleet={selectedFleet}
             selectedPlanet={selectedPlanet}
+            selectionKind={selectionKind}
+            selectedDeposit={selectedDeposit}
+            selectedMiner={selectedMiner}
+            onMiner={(id) => {
+              const m = state.miners.find((m) => m.id === id);
+              if (!m) return;
+              inspect(m.system, true);
+              setSelectionKind("miner");
+              setSelectedMiner(id);
+              setSelectedFleetIds([]);
+            }}
             selectedFleetIds={selectedFleetIds}
             onPlanet={selectPlanet}
             onDeposit={(system, id) => {
               inspect(system, true);
               setSelectedDeposit(id);
+              setSelectedFleetIds([]);
             }}
             filter={filter}
             onSelect={inspect}
@@ -1100,7 +1126,12 @@ export default function App({
                           n > 0 && (
                             <img
                               key={i}
-                              src={asset(ships[shipClasses[i]].art)}
+                              src={asset(
+                                shipArtwork(
+                                  state.commanders[f.owner].civilization,
+                                  i,
+                                ),
+                              )}
                               alt={`${n} ${shipClasses[i]}`}
                             />
                           ),

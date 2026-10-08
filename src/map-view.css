@@ -846,3 +846,37 @@
     top: 195px;
   }
 }
+
+/* Map objects use a local circular focus/selection halo, never a group bounding box. */
+.galaxy-svg .map-object:focus,
+.galaxy-svg .map-object:focus-visible {
+  outline: none;
+}
+.map-object .object-highlight {
+  fill: none;
+  stroke: #f4d995;
+  stroke-width: 2;
+  stroke-dasharray: 5 3;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px #e8c78199);
+}
+.map-object[aria-pressed="true"] > .object-highlight,
+.map-object:focus-visible > .object-highlight {
+  opacity: 1;
+}
+.map-object:not([aria-pressed="true"]):not(:focus-visible):hover
+  > .object-highlight {
+  opacity: 0.65;
+}
+.map-object[aria-pressed="true"] > image,
+.map-object:focus-visible > image {
+  filter: brightness(1.18) drop-shadow(0 0 2px #b6e6ef80);
+}
+.mining-craft-portrait {
+  display: block;
+  width: 96px;
+  height: 112px;
+  object-fit: contain;
+  margin: 12px auto;
+}

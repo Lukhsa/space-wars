@@ -1,5 +1,5 @@
 {
-  "note": "Selective unchanged copies for the owner-requested local visual prototype. No reference runtime dependency.",
+  "note": "Space Wars artwork provenance. Copied reference assets are unchanged and have no runtime dependency; generated assets identify their tool and prompt.",
   "assets": [
     {
       "path": "public/assets/species_solari.jpg",
@@ -292,6 +292,139 @@
       "sourceCommit": "097ded6f82bffbeb0957441e75b8818e07998bef",
       "purpose": "Planetary defense inspector; unchanged owner-approved artwork",
       "sha256": "037290d0e8bd154dd2e7358980a326b5b664986172528c5ab281d797defa7a67"
+    },
+    {
+      "path": "public/assets/war2_engine_burner_redline_frigate.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_engine_burner_redline_frigate.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "eafc192afe29d1ce27500305ca4bf15cfdab7df884491cc49187becb975e494c"
+    },
+    {
+      "path": "public/assets/war2_kragg_gnasher_raider.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_kragg_gnasher_raider.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "e027ee155169c8c1c04c198836f9eb2fe68404dbed9d0856d6502d7141a04caf"
+    },
+    {
+      "path": "public/assets/war2_kragg_rockjaw_gunship.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_kragg_rockjaw_gunship.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "d6e5a1299effc7e3f8a1439c078903d62b52891e372c178f48351c6b4a1f0a1e"
+    },
+    {
+      "path": "public/assets/war2_kragg_ravager.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_kragg_ravager.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "b82e07c0ff80c8d5cbd72636e28a35d979bdf8f0fd725333be91f3451d158cdc"
+    },
+    {
+      "path": "public/assets/war2_kragg_war_chief.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_kragg_war_chief.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "163edb37affe22ee4c980a04917d6deae8cb70e9ab6e76c1b71430d77c02d19a"
+    },
+    {
+      "path": "public/assets/war2_zetari_dissection_frigate.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_zetari_dissection_frigate.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "e807b5d670d605907be7ddc12b5bad4c712e77f55c69a26f4541c20c5714ba02"
+    },
+    {
+      "path": "public/assets/war2_zetari_specimen_cruiser.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_zetari_specimen_cruiser.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "e5eec5d9ca8ac0aa62b3c2301bca972f51b11aaaf8e4369dc74974b452718ee1"
+    },
+    {
+      "path": "public/assets/war2_zetari_containment_dreadnought.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_zetari_containment_dreadnought.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "a3fcd3275df1271ac27aa12718e8b282e278ed4c154e1a076a1434ce93d3ab62"
+    },
+    {
+      "path": "public/assets/war2_skin_warship_frigate_solar_forge.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_skin_warship_frigate_solar_forge.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "a7ca57b046ddf66e92248a19e5f7dc02703ed071d072e563dda06989d9eeeb3d"
+    },
+    {
+      "path": "public/assets/war2_skin_warship_cruiser_solar_forge.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_skin_warship_cruiser_solar_forge.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "2b07d4104b76e341a41b148ca643d1836d40880f4fa3176886ece07575d1f123"
+    },
+    {
+      "path": "public/assets/war2_skin_warship_dreadnought_solar_forge.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_skin_warship_dreadnought_solar_forge.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "99be8d4c6b1ede046fa13899bd7077f842f769fe91a15de99d980d89f64ede93"
+    },
+    {
+      "path": "public/assets/war2_aether_loom_frigate.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_aether_loom_frigate.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "91e7084d0ee1c73ea2423671a546c3e891e478a8244c4d96c7b5c5322cad8fd5"
+    },
+    {
+      "path": "public/assets/war2_aether_atlas_dreadnought.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_aether_atlas_dreadnought.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "b2bd62f2befeff4d5b288f3cebd54739237d545c9b56fa8cf25a10299927e69f"
+    },
+    {
+      "path": "public/assets/war2_glint_fine_print_escort.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_glint_fine_print_escort.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "e46d7814e9786352e2b2357a8e87d8be34d2d79c93527e81ad36f71822fc135d"
+    },
+    {
+      "path": "public/assets/war2_glint_liquid_assets_barge.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_glint_liquid_assets_barge.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "f824406557ac499507269044dc4f4d9f983cc6f5e40b6a1a09b2795978fe06f7"
+    },
+    {
+      "path": "public/assets/war2_glint_compound_interest_dreadnought.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_glint_compound_interest_dreadnought.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "75169b889a0729e385817b69f72545fd366c4fc136c1616a900d76e8f119029b"
+    },
+    {
+      "path": "public/assets/war2_myrmex_convoy_frigate.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_myrmex_convoy_frigate.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "88b946ab2ee6b6daaf418db9edb4d45e5b0d32c256d9eebd5d408592beb87b6b"
+    },
+    {
+      "path": "public/assets/war2_myrmex_foundry_dreadnought.webp",
+      "sourceRepository": "Space Explorer RPG Web",
+      "sourcePath": "src/assets/artwork/war2_myrmex_foundry_dreadnought.webp",
+      "purpose": "Faction-specific fleet hull artwork",
+      "sha256": "8b4c00ab9e6288c1aec34eff53cd2a9bbe7e835efb87eb14e02f78b3b42fe3c4"
+    },
+    {
+      "path": "public/assets/human_mining_craft_01.png",
+      "source": "Built-in image_gen imagegen",
+      "prompt": "docs/SHIP_ART_SELECTION.md",
+      "purpose": "Human civilian mining craft map sprite and inspector portrait",
+      "sha256": "fa87455e998c355c72c2decd63796b7fb649ab9e7224fbe8ac5cc630d7f2d842"
     }
   ],
   "originalAssets": [
